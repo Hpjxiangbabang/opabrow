@@ -49,7 +49,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Verify types
         run: pnpm typecheck
-      - name: Prepare signed macOS release
+      - name: Prepare macOS release (optional signing)
         if: runner.os == 'macOS'
         shell: bash
         env:
@@ -59,14 +59,18 @@ jobs:
           RELEASE_APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           RELEASE_APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
+          # 如果配置了签名证书和公证凭证，则启用签名+公证；
+          # 否则跳过，产出未签名 DMG（用户首次运行需手动允许）。
           if [[ -z "$RELEASE_MAC_CSC_LINK" || -z "$RELEASE_MAC_CSC_KEY_PASSWORD" ]]; then
-            echo "::error::macOS releases require a Developer ID Application certificate in MAC_CSC_LINK and its password in MAC_CSC_KEY_PASSWORD."
-            exit 1
+            echo "::warning::No macOS signing credentials found. Building unsigned DMG."
+            echo "SIGNED_MAC=false" >> "$GITHUB_ENV"
+            exit 0
           fi
 
           if [[ -z "$RELEASE_APPLE_API_KEY" || -z "$RELEASE_APPLE_API_KEY_ID" || -z "$RELEASE_APPLE_API_ISSUER" ]]; then
-            echo "::error::macOS releases require Apple notarization credentials: APPLE_API_KEY, APPLE_API_KEY_ID, and APPLE_API_ISSUER."
-            exit 1
+            echo "::warning::No Apple notarization credentials found. Building signed but un-notarized DMG."
+            echo "SIGNED_MAC=false" >> "$GITHUB_ENV"
+            exit 0
           fi
 
           key_path="$RUNNER_TEMP/AuthKey_${RELEASE_APPLE_API_KEY_ID}.p8"
@@ -77,6 +81,7 @@ jobs:
             echo "APPLE_API_KEY=$key_path"
             echo "APPLE_API_KEY_ID=$RELEASE_APPLE_API_KEY_ID"
             echo "APPLE_API_ISSUER=$RELEASE_APPLE_API_ISSUER"
+            echo "SIGNED_MAC=true" >> "$GITHUB_ENV"
           } >> "$GITHUB_ENV"
       - name: Package application
         shell: bash
