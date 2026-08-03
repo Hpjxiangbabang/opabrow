@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, shell, ipcMain, Menu, MenuItemConstructorOptions, screen, session, WebContentsView } from 'electron';
+import { app, BrowserWindow, dialog, shell, ipcMain, Menu, MenuItemConstructorOptions, Tray, nativeImage, screen, session, WebContentsView } from 'electron';
 import { basename, extname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -16,6 +16,7 @@ import { AppSession, DownloadEntry, SessionStore, sanitizeSessionPatch } from '.
 
 // ---------- 窗口引用 ----------
 let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
 let bookmarkStore: BookmarkStore | null = null;
 let passwordStore: PasswordStore | null = null;
 let sessionStore: SessionStore | null = null;
@@ -462,7 +463,12 @@ function refreshApplicationMenuNow(): void {
     refreshMenuTimer = null;
   }
   if (!mainWindow || mainWindow.isDestroyed() || !bookmarkStore || !passwordStore) return;
-  Menu.setApplicationMenu(buildAppMenu(mainWindow, bookmarkStore, passwordStore));
+  const menu = buildAppMenu(mainWindow, bookmarkStore, passwordStore);
+  Menu.setApplicationMenu(menu);
+  // Windows / Linux 下同步刷新托盘右键菜单
+  if (tray && !tray.isDestroyed()) {
+    tray.setContextMenu(menu);
+  }
 }
 
 async function showImportResult(win: BrowserWindow, source: string, importBookmarks: () => Promise<number>): Promise<void> {
@@ -505,6 +511,7 @@ async function confirmAndClearHistory(win: BrowserWindow): Promise<boolean> {
 function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: PasswordStore): Menu {
   const isMac = process.platform === 'darwin';
 
+  // macOS 专属应用菜单（关于/服务/隐藏/退出），Windows/Linux 托盘不需要这些
   const appMenu: MenuItemConstructorOptions = {
     label: 'opabrow',
     submenu: [
@@ -843,11 +850,68 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
     ]
   };
 
+  // Windows / Linux 托盘菜单专属：显示/隐藏窗口、退出
+  const trayWindowMenu: MenuItemConstructorOptions = {
+    label: '窗口',
+    submenu: [
+      {
+        label: '显示 / 隐藏',
+        accelerator: 'CmdOrCtrl+Shift+Space',
+        click: () => {
+          if (win.isVisible()) {
+            win.hide();
+          } else {
+            win.show();
+            win.focus();
+          }
+        }
+      },
+      { type: 'separator' },
+      { role: 'minimize', label: '最小化' },
+      { type: 'separator' },
+      {
+        label: '退出 opabrow',
+        click: () => app.quit()
+      }
+    ]
+  };
+
   const template: MenuItemConstructorOptions[] = isMac
     ? [appMenu, editMenu, browseMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, windowMenu]
-    : [editMenu, browseMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, windowMenu];
+    : [editMenu, browseMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, trayWindowMenu];
 
   return Menu.buildFromTemplate(template);
+}
+
+// ---------- Windows / Linux 系统托盘 ----------
+// macOS 有顶部菜单栏承载全部功能；Windows / Linux 无边框窗口没有菜单栏，
+// 通过任务栏托盘图标的右键菜单提供同样的功能入口。
+function createTray(win: BrowserWindow): Tray {
+  // 托盘图标路径：开发环境下指向项目根目录 build/icon.png，
+  // 打包后由 electron-builder 复制到 resources 目录。
+  const isDev = !app.isPackaged;
+  const iconPath = isDev
+    ? join(__dirname, '../../build/icon.png')
+    : join(process.resourcesPath, 'build/icon.png');
+  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  const trayIcon = new Tray(icon);
+  trayIcon.setToolTip('opabrow');
+  if (bookmarkStore && passwordStore) {
+    trayIcon.setContextMenu(buildAppMenu(win, bookmarkStore, passwordStore));
+  }
+
+  // 单击托盘图标显示/隐藏窗口（Windows 惯例）
+  trayIcon.on('click', () => {
+    if (win.isDestroyed()) return;
+    if (win.isVisible() && win.isFocused()) {
+      win.hide();
+    } else {
+      win.show();
+      win.focus();
+    }
+  });
+
+  return trayIcon;
 }
 
 // ---------- IPC handlers ----------
@@ -1082,6 +1146,11 @@ app.whenReady().then(async () => {
   attachWebContentView(mainWindow, sessionState.url ?? '');
   registerIpc(bookmarkStore, passwordStore);
 
+  // Windows / Linux: 创建系统托盘图标,右键菜单承载全部应用功能
+  if (process.platform !== 'darwin') {
+    tray = createTray(mainWindow);
+  }
+
   refreshApplicationMenu();
 
   app.on('activate', () => {
@@ -1097,4 +1166,9 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('will-quit', () => {
+  tray?.destroy();
+  tray = null;
 });

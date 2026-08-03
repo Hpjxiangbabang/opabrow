@@ -12,3 +12,9 @@ release/
 HANDOFF.md
 .vscode/
 .cert-setup/
+
+# npm 生成的 lock 文件（项目使用 pnpm）
+package-lock.json
+
+# 工作区临时文件
+.workbuddy/
