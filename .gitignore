@@ -20,4 +20,4 @@ package-lock.json
 .workbuddy/
 
 # 本地内部文档,不提交到仓库
-docs/GROWTH_STRATEGY.md
+docs/
