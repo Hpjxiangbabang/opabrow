@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>opabrow - 透明浮层浏览器 | 上班摸鱼神器</title>
+  <meta name="description" content="opabrow 是一款基于 Electron 的透明浮层浏览器,支持窗口透明度调节、置顶显示、点击穿透、B站视频网页全屏等特色功能。macOS / Windows / Linux 全平台支持。">
+  <meta name="keywords" content="opabrow,透明浏览器,浮层浏览器,摸鱼浏览器,Electron浏览器,透明窗口,置顶浏览器,上班摸鱼,桌面浮层,透明度调节,点击穿透">
+  <meta name="author" content="opabrow contributors">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://claytonpetrosian.github.io/opabrow/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="opabrow - 透明浮层浏览器 | 上班摸鱼神器">
+  <meta property="og:description" content="基于 Electron 的透明浮层浏览器,支持窗口透明度调节、置顶显示、点击穿透。macOS / Windows / Linux 全平台支持。">
+  <meta property="og:url" content="https://claytonpetrosian.github.io/opabrow/">
+  <meta property="og:image" content="https://raw.githubusercontent.com/ClaytonPetrosian/opabrow/main/docs/opabrow-preview.svg">
+  <meta property="og:site_name" content="opabrow">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:locale:alternate" content="ja_JP">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="opabrow - 透明浮层浏览器 | 上班摸鱼神器">
+  <meta name="twitter:description" content="基于 Electron 的透明浮层浏览器,支持窗口透明度调节、置顶显示、点击穿透。全平台支持。">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/ClaytonPetrosian/opabrow/main/docs/opabrow-preview.svg">
+
+  <!-- 结构化数据 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "opabrow",
+    "description": "透明浮层浏览器,支持窗口透明度调节、置顶显示、点击穿透、B站视频网页全屏等特色功能。",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "macOS, Windows, Linux",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "softwareVersion": "1.0.0",
+    "license": "MPL-2.0",
+    "author": {
+      "@type": "Organization",
+      "name": "opabrow contributors"
+    },
+    "url": "https://github.com/ClaytonPetrosian/opabrow",
+    "downloadUrl": "https://github.com/ClaytonPetrosian/opabrow/releases/latest"
+  }
+  </script>
+
+  <!-- hreflang 多语言 -->
+  <link rel="alternate" hreflang="zh-CN" href="https://claytonpetrosian.github.io/opabrow/">
+  <link rel="alternate" hreflang="en" href="https://claytonpetrosian.github.io/opabrow/index.en.html">
+  <link rel="alternate" hreflang="ja" href="https://claytonpetrosian.github.io/opabrow/index.ja.html">
+  <link rel="alternate" hreflang="x-default" href="https://claytonpetrosian.github.io/opabrow/">
+
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --radius: 10px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+      background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, #3b82f6, #60a5fa, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto 32px;
+    }
+    .badges {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    /* Features */
+    .features { padding: 60px 0; }
+    .section-title {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 40px;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-card h3 {
+      font-size: 17px;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .feature-icon {
+      font-size: 24px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    /* Download */
+    .download { padding: 60px 0; border-top: 1px solid var(--border); }
+    .download-platforms {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 32px;
+    }
+    .platform-card {
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+    .platform-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .platform-card .platform-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .platform-card .platform-desc { font-size: 13px; color: var(--text-muted); }
+
+    /* Footer */
+    footer {
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+
+    /* FAQ */
+    .faq { padding: 60px 0; border-top: 1px solid var(--border); }
+    .faq-item {
+      max-width: 720px;
+      margin: 0 auto 20px;
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .faq-item h3 { font-size: 16px; margin-bottom: 6px; }
+    .faq-item p { font-size: 14px; color: var(--text-muted); }
+
+    @media (max-width: 600px) {
+      .hero { padding: 50px 0 40px; }
+      .cta-group { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="container">
+    <div class="badges">
+      <span class="badge">MPL-2.0 开源</span>
+      <span class="badge">macOS / Windows / Linux</span>
+      <span class="badge">Electron 43</span>
+      <span class="badge">免费</span>
+    </div>
+    <h1><span class="gradient">opabrow</span> 透明浮层浏览器</h1>
+    <p>上班摸鱼神器 — 可调节透明度的桌面浮层浏览器,置顶显示、点击穿透,让你在工作时随时浏览网页,老板来了一键透明。</p>
+    <div class="cta-group">
+      <a href="https://github.com/ClaytonPetrosian/opabrow/releases/latest" class="btn btn-primary">
+        立即下载
+      </a>
+      <a href="https://github.com/ClaytonPetrosian/opabrow" class="btn btn-secondary">
+        查看源码
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="container">
+    <h2 class="section-title">核心特性</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">透明</span>
+        <h3>窗口透明度调节</h3>
+        <p>10% - 100% 任意调节窗口透明度,工作浏览两不误。支持快捷键快速调节。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">置顶</span>
+        <h3>窗口置顶 + 点击穿透</h3>
+        <p>窗口始终浮在最上层,开启点击穿透后鼠标可直接操作下方窗口,互不干扰。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">右键</span>
+        <h3>完整右键菜单</h3>
+        <p>选中文本可直接复制、Google/Bing 搜索;链接可复制地址或打开;支持粘贴、全选等操作。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">B站</span>
+        <h3>B站视频网页全屏</h3>
+        <p>自动检测 B 站视频页面,一键网页全屏播放,无需手动点击。可在菜单中关闭此功能。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">更新</span>
+        <h3>自动更新检测</h3>
+        <p>支持 GitLab / GitHub 自动检测新版本,启动后自动检查,有更新即时提醒。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">书签</span>
+        <h3>书签 / 历史 / 密码管理</h3>
+        <p>支持 Chrome / Safari 书签导入,本地历史记录,Chrome 密码 CSV 导入与自动填充。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">拖拽</span>
+        <h3>可拖拽地址栏</h3>
+        <p>地址栏宽度可自由拖动调整(最小 100px),适应不同使用场景。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">手机</span>
+        <h3>手机模式访问</h3>
+        <p>一键切换移动端 User-Agent,以手机版布局浏览网页,节省屏幕空间。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="download">
+  <div class="container">
+    <h2 class="section-title">下载安装</h2>
+    <p style="text-align:center; color: var(--text-muted); font-size:14px;">免费开源,支持全平台。选择你的系统下载对应版本:</p>
+    <div class="download-platforms">
+      <a href="https://github.com/ClaytonPetrosian/opabrow/releases/latest" class="platform-card">
+        <div class="platform-name">macOS</div>
+        <div class="platform-desc">Apple Silicon / Intel DMG</div>
+      </a>
+      <a href="https://github.com/ClaytonPetrosian/opabrow/releases/latest" class="platform-card">
+        <div class="platform-name">Windows</div>
+        <div class="platform-desc">x64 安装程序 (NSIS)</div>
+      </a>
+      <a href="https://github.com/ClaytonPetrosian/opabrow/releases/latest" class="platform-card">
+        <div class="platform-name">Linux</div>
+        <div class="platform-desc">x64 AppImage</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="faq">
+  <div class="container">
+    <h2 class="section-title">常见问题</h2>
+    <div class="faq-item">
+      <h3>opabrow 是什么?</h3>
+      <p>opabrow 是一款基于 Electron 的透明浮层浏览器,专为需要在工作时浏览网页的用户设计。窗口可以调节透明度、置顶显示、点击穿透,非常适合上班摸鱼场景。</p>
+    </div>
+    <div class="faq-item">
+      <h3>支持哪些操作系统?</h3>
+      <p>支持 macOS (Apple Silicon + Intel)、Windows x64 和 Linux x64。所有平台功能一致,体验相近。</p>
+    </div>
+    <div class="faq-item">
+      <h3>是免费的吗?</h3>
+      <p>完全免费,基于 MPL-2.0 开源协议发布,源码托管在 GitHub。</p>
+    </div>
+    <div class="faq-item">
+      <h3>Windows 上托盘图标不显示怎么办?</h3>
+      <p>1.0.0 版本已修复 Windows 托盘图标显示问题。请确保使用最新版本。如果仍有问题,请在 GitHub 提交 issue。</p>
+    </div>
+    <div class="faq-item">
+      <h3>如何关闭 B 站视频自动网页全屏?</h3>
+      <p>在菜单栏「显示」>「B站视频默认网页全屏」取消勾选即可。设置会自动保存,下次启动生效。</p>
+    </div>
+    <div class="faq-item">
+      <h3>如何配置自动更新检测?</h3>
+      <p>应用会在 userData 目录下读取 update-source.json 配置文件。可配置 GitLab 或 GitHub 作为更新源。启动后自动检查,也可通过菜单「显示」>「检查更新…」手动触发。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="https://github.com/ClaytonPetrosian/opabrow">GitHub</a>
+      <a href="https://github.com/ClaytonPetrosian/opabrow/releases">Releases</a>
+      <a href="https://github.com/ClaytonPetrosian/opabrow/blob/main/CONTRIBUTING.md">贡献指南</a>
+      <a href="https://github.com/ClaytonPetrosian/opabrow/blob/main/SECURITY.md">安全策略</a>
+    </div>
+    <p>Copyright &copy; 2026 opabrow contributors. MPL-2.0 License.</p>
+  </div>
+</footer>
+
+</body>
+</html>

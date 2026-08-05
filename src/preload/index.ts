@@ -24,7 +24,9 @@ export type MenuAction =
   | 'show_find'
   | 'find_next'
   | 'find_previous'
-  | 'show_downloads';
+  | 'show_downloads'
+  | 'check_for_updates'
+  | 'bilibili_fullscreen_toggle';
 
 export type PasswordMatch = {
   id: string;
@@ -59,6 +61,25 @@ export type SavedSession = {
   alwaysOnTop: boolean;
   clickThrough?: boolean;
   mobileMode: boolean;
+  bilibiliWebFullscreen?: boolean;
+};
+
+export type UpdateCheckResult = {
+  available: boolean;
+  reason?: 'up-to-date' | 'network-error' | 'not-configured' | 'parse-error';
+  info?: {
+    version: string;
+    releaseUrl: string;
+    releaseNotes: string;
+    publishedAt: string;
+  };
+};
+
+export type UpdateSourceConfig = {
+  provider: 'gitlab' | 'github';
+  host: string;
+  project: string;
+  token?: string;
 };
 
 const api = {
@@ -178,6 +199,20 @@ const api = {
       ipcRenderer.on('webview:did-finish-load', handler);
       return (): void => {
         ipcRenderer.removeListener('webview:did-finish-load', handler);
+      };
+    }
+  },
+
+  // ---------- 自动更新 ----------
+  updater: {
+    check: (): Promise<UpdateCheckResult | null> => ipcRenderer.invoke('updater:check'),
+    getLastResult: (): Promise<UpdateCheckResult | null> => ipcRenderer.invoke('updater:get-last-result'),
+    download: (url?: string): Promise<boolean> => ipcRenderer.invoke('updater:download', url),
+    onCheckResult: (callback: (result: UpdateCheckResult) => void) => {
+      const handler = (_e: Electron.IpcRendererEvent, result: UpdateCheckResult): void => callback(result);
+      ipcRenderer.on('updater:check-result', handler);
+      return (): void => {
+        ipcRenderer.removeListener('updater:check-result', handler);
       };
     }
   }

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, shell, ipcMain, Menu, MenuItemConstructorOptions, Tray, nativeImage, screen, session, WebContentsView } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, shell, ipcMain, Menu, MenuItemConstructorOptions, Tray, nativeImage, screen, session, WebContentsView } from 'electron';
 import { basename, extname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -13,6 +13,7 @@ import {
 import { PasswordStore } from './passwords';
 import { HistoryEntry, sanitizeHistoryEntries } from './history';
 import { AppSession, DownloadEntry, SessionStore, sanitizeSessionPatch } from './session';
+import { registerUpdaterIpc, startAutoUpdateCheck, stopAutoUpdateCheck } from './updater';
 
 // ---------- 窗口引用 ----------
 let mainWindow: BrowserWindow | null = null;
@@ -90,6 +91,117 @@ function createWebContentView(initialUrl: string): WebContentsView {
   view.webContents.on('page-title-updated', (_e, title) => send('webview:page-title-updated', title));
   view.webContents.on('found-in-page', (_e, result) => send('webview:found-in-page', result));
   view.webContents.on('did-finish-load', () => send('webview:did-finish-load'));
+
+  // ---------- 右键菜单 ----------
+  // 为网页内容提供复制/粘贴/搜索等常见右键操作。
+  view.webContents.on('context-menu', async (_event, params) => {
+    const wc = view.webContents;
+    const menuItems: MenuItemConstructorOptions[] = [];
+
+    // 选中文本相关操作
+    if (params.selectionText) {
+      menuItems.push({
+        label: '复制',
+        click: () => clipboard.writeText(params.selectionText)
+      });
+      // 搜索选中文本
+      menuItems.push({
+        label: `用 Google 搜索"${params.selectionText.slice(0, 20)}${params.selectionText.length > 20 ? '…' : ''}"`,
+        click: () => {
+          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(params.selectionText)}`;
+          void wc.loadURL(searchUrl);
+        }
+      });
+      // 用 Bing 搜索(备选)
+      menuItems.push({
+        label: `用 Bing 搜索"${params.selectionText.slice(0, 20)}${params.selectionText.length > 20 ? '…' : ''}"`,
+        click: () => {
+          const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(params.selectionText)}`;
+          void wc.loadURL(searchUrl);
+        }
+      });
+      menuItems.push({ type: 'separator' });
+    }
+
+    // 可编辑区域: 粘贴
+    if (params.isEditable) {
+      const clipText = clipboard.readText();
+      if (clipText) {
+        menuItems.push({
+          label: '粘贴',
+          click: () => wc.paste()
+        });
+      }
+      menuItems.push({
+        label: '全选',
+        click: () => wc.selectAll()
+      });
+      menuItems.push({ type: 'separator' });
+    }
+
+    // 链接相关
+    if (params.linkURL) {
+      menuItems.push({
+        label: '打开链接',
+        click: () => void wc.loadURL(params.linkURL)
+      });
+      menuItems.push({
+        label: '复制链接地址',
+        click: () => clipboard.writeText(params.linkURL)
+      });
+      menuItems.push({ type: 'separator' });
+    }
+
+    // 图片相关
+    if (params.mediaType === 'image' && params.srcURL) {
+      menuItems.push({
+        label: '复制图片地址',
+        click: () => clipboard.writeText(params.srcURL)
+      });
+      menuItems.push({
+        label: '在新标签打开图片',
+        click: () => void wc.loadURL(params.srcURL)
+      });
+      menuItems.push({ type: 'separator' });
+    }
+
+    // 导航操作
+    menuItems.push({
+      label: '后退',
+      enabled: wc.navigationHistory.canGoBack(),
+      click: () => wc.goBack()
+    });
+    menuItems.push({
+      label: '前进',
+      enabled: wc.navigationHistory.canGoForward(),
+      click: () => wc.goForward()
+    });
+    menuItems.push({
+      label: '重新加载',
+      click: () => wc.reload()
+    });
+    menuItems.push({ type: 'separator' });
+
+    // 复制当前页面 URL
+    menuItems.push({
+      label: '复制页面地址',
+      click: () => clipboard.writeText(wc.getURL())
+    });
+
+    // 检查元素(开发模式)
+    if (is.dev) {
+      menuItems.push({ type: 'separator' });
+      menuItems.push({
+        label: '检查元素',
+        click: () => wc.inspectElement(params.x, params.y)
+      });
+    }
+
+    if (menuItems.length > 0) {
+      const menu = Menu.buildFromTemplate(menuItems);
+      menu.popup({ window: mainWindow ?? undefined });
+    }
+  });
 
   // 初始加载
   if (initialUrl) {
@@ -815,6 +927,16 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
       },
       { type: 'separator' },
       {
+        label: 'B站视频默认网页全屏',
+        type: 'checkbox',
+        checked: sessionStore?.getSnapshot().bilibiliWebFullscreen !== false,
+        click: (menuItem) => {
+          sessionStore?.update({ bilibiliWebFullscreen: menuItem.checked });
+          win.webContents.send('menu-action', 'bilibili_fullscreen_toggle', menuItem.checked);
+        }
+      },
+      { type: 'separator' },
+      {
         label: '调整透明度…',
         click: () => win.webContents.send('menu-action', 'show_opacity_dialog')
       },
@@ -833,6 +955,11 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
         label: '打开命令面板',
         accelerator: 'CmdOrCtrl+K',
         click: () => win.webContents.send('menu-action', 'show_quickbar')
+      },
+      { type: 'separator' },
+      {
+        label: '检查更新…',
+        click: () => win.webContents.send('menu-action', 'check_for_updates')
       }
     ]
   };
@@ -887,21 +1014,45 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
 // macOS 有顶部菜单栏承载全部功能；Windows / Linux 无边框窗口没有菜单栏，
 // 通过任务栏托盘图标的右键菜单提供同样的功能入口。
 function createTray(win: BrowserWindow): Tray {
-  // 托盘图标路径：开发环境下指向项目根目录 build/icon.png，
-  // 打包后由 electron-builder 复制到 resources 目录。
+  // 托盘图标路径：使用多尺寸查找,优先小尺寸 PNG。
+  // Windows 托盘推荐 16x16 或 32x32,macOS 状态栏推荐 16x16@2x。
   const isDev = !app.isPackaged;
-  const iconPath = isDev
-    ? join(__dirname, '../../build/icon.png')
-    : join(process.resourcesPath, 'build/icon.png');
-  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-  const trayIcon = new Tray(icon);
-  trayIcon.setToolTip('opabrow');
+  const iconCandidates = isDev
+    ? [
+        join(__dirname, '../../build/icon.iconset/icon_32.png'),
+        join(__dirname, '../../build/icon.iconset/icon_64.png'),
+        join(__dirname, '../../build/icon.iconset/icon_128.png'),
+        join(__dirname, '../../build/icon.png')
+      ]
+    : [
+        join(process.resourcesPath, 'build/icon.iconset/icon_32.png'),
+        join(process.resourcesPath, 'build/icon.iconset/icon_64.png'),
+        join(process.resourcesPath, 'build/icon.iconset/icon_128.png'),
+        join(process.resourcesPath, 'build/icon.png')
+      ];
+
+  let iconPath = iconCandidates[iconCandidates.length - 1];
+  for (const candidate of iconCandidates) {
+    if (existsSync(candidate)) {
+      iconPath = candidate;
+      break;
+    }
+  }
+
+  // Windows 上 resize 到 16x16,使用 nearest 插值获得清晰边缘
+  const icon = nativeImage.createFromPath(iconPath);
+  if (icon.isEmpty()) {
+    console.warn('[opabrow] tray icon not found at:', iconPath);
+  }
+  const trayIcon = icon.resize({ width: 16, height: 16 });
+  const trayInstance = new Tray(trayIcon);
+  trayInstance.setToolTip('opabrow');
   if (bookmarkStore && passwordStore) {
-    trayIcon.setContextMenu(buildAppMenu(win, bookmarkStore, passwordStore));
+    trayInstance.setContextMenu(buildAppMenu(win, bookmarkStore, passwordStore));
   }
 
   // 单击托盘图标显示/隐藏窗口（Windows 惯例）
-  trayIcon.on('click', () => {
+  trayInstance.on('click', () => {
     if (win.isDestroyed()) return;
     if (win.isVisible() && win.isFocused()) {
       win.hide();
@@ -911,7 +1062,7 @@ function createTray(win: BrowserWindow): Tray {
     }
   });
 
-  return trayIcon;
+  return trayInstance;
 }
 
 // ---------- IPC handlers ----------
@@ -1146,6 +1297,10 @@ app.whenReady().then(async () => {
   attachWebContentView(mainWindow, sessionState.url ?? '');
   registerIpc(bookmarkStore, passwordStore);
 
+  // 自动更新检测
+  registerUpdaterIpc(() => mainWindow);
+  startAutoUpdateCheck(() => mainWindow);
+
   // Windows / Linux: 创建系统托盘图标,右键菜单承载全部应用功能
   if (process.platform !== 'darwin') {
     tray = createTray(mainWindow);
@@ -1169,6 +1324,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('will-quit', () => {
+  stopAutoUpdateCheck();
   tray?.destroy();
   tray = null;
 });

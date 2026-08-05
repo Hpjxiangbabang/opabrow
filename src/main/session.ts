@@ -27,6 +27,7 @@ export type AppSession = {
   alwaysOnTop: boolean;
   clickThrough: boolean;
   mobileMode: boolean;
+  bilibiliWebFullscreen: boolean;
   bounds: WindowBounds | null;
   downloads: DownloadEntry[];
 };
@@ -37,6 +38,7 @@ const DEFAULT_SESSION: AppSession = {
   alwaysOnTop: false,
   clickThrough: true,
   mobileMode: false,
+  bilibiliWebFullscreen: true,
   bounds: null,
   downloads: []
 };
@@ -116,6 +118,7 @@ export function sanitizeSession(value: unknown): AppSession {
     alwaysOnTop: session.alwaysOnTop === true,
     clickThrough: session.clickThrough !== false,
     mobileMode: session.mobileMode === true,
+    bilibiliWebFullscreen: session.bilibiliWebFullscreen !== false,
     bounds: sanitizeBounds(session.bounds),
     // 进程重启时没有可继续复用的 DownloadItem，遗留中的任务应明确显示为失败。
     downloads: sanitizeDownloads(session.downloads).map((entry) =>
@@ -133,6 +136,7 @@ export function sanitizeSessionPatch(value: unknown): Partial<AppSession> {
   if (typeof patch.alwaysOnTop === 'boolean') next.alwaysOnTop = patch.alwaysOnTop;
   if (typeof patch.clickThrough === 'boolean') next.clickThrough = patch.clickThrough;
   if (typeof patch.mobileMode === 'boolean') next.mobileMode = patch.mobileMode;
+  if (typeof patch.bilibiliWebFullscreen === 'boolean') next.bilibiliWebFullscreen = patch.bilibiliWebFullscreen;
   return next;
 }
 

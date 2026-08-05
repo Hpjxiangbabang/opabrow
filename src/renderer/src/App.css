@@ -557,6 +557,51 @@ body {
   -webkit-app-region: no-drag;
 }
 
+/* ---------- 更新提示 ---------- */
+.update-notification {
+  position: fixed;
+  right: 16px;
+  bottom: 48px;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 122, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(20, 30, 50, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.update-notification button {
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 122, 255, 0.8);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.update-notification button:hover {
+  background: rgba(0, 122, 255, 1);
+}
+
+.update-notification button:last-child {
+  background: transparent;
+  border-color: transparent;
+  font-size: 14px;
+  line-height: 1;
+  padding: 3px 6px;
+}
+
+.update-notification button:last-child:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .quick-toggle {
   flex: 1;
   min-width: 0;
@@ -694,7 +739,7 @@ body {
   position: relative;
   flex: 0 1 auto;
   width: fit-content;
-  min-width: 0;
+  min-width: 100px;
   max-width: 500px;
   margin-left: 18px;
   -webkit-app-region: no-drag;
@@ -703,6 +748,23 @@ body {
 .titlebar-address:has(.titlebar-address-input) {
   flex-basis: min(500px, 100%);
   width: min(500px, 100%);
+}
+
+/* 地址栏拖拽分隔条 */
+.address-resizer {
+  flex: 0 0 4px;
+  width: 4px;
+  height: 20px;
+  margin: 0 4px;
+  border-radius: 2px;
+  background: rgba(120, 130, 145, 0.25);
+  cursor: col-resize;
+  -webkit-app-region: no-drag;
+  transition: background 0.15s ease;
+}
+
+.address-resizer:hover {
+  background: rgba(0, 122, 255, 0.6);
 }
 
 .titlebar-address-preview {

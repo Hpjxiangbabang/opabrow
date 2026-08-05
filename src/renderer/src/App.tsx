@@ -171,6 +171,11 @@ function App() {
   const [opacity, setOpacity] = useState(1.0);
   const [onTop, setOnTop] = useState(false);
   const [mobileMode, setMobileMode] = useState(false);
+  const [bilibiliWebFullscreen, setBilibiliWebFullscreen] = useState(true);
+  const bilibiliWebFullscreenRef = useRef(bilibiliWebFullscreen);
+  useEffect(() => {
+    bilibiliWebFullscreenRef.current = bilibiliWebFullscreen;
+  }, [bilibiliWebFullscreen]);
   const [sessionReady, setSessionReady] = useState(false);
   const [showOpacityDialog, setShowOpacityDialog] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -190,6 +195,9 @@ function App() {
   const [passwordStatus, setPasswordStatus] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [downloads, setDownloads] = useState<DownloadEntry[]>([]);
+  const [updateAvailable, setUpdateAvailable] = useState<{ version: string; releaseUrl: string } | null>(null);
+  const [addressBarWidth, setAddressBarWidth] = useState<number>(0); // 0 = 使用默认 CSS 宽度
+  const addressBarResizingRef = useRef(false);
   const webviewReadyRef = useRef(false);
   const quickInputRef = useRef<HTMLInputElement>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
@@ -250,6 +258,9 @@ function App() {
         setOpacity(saved.opacity);
         setOnTop(saved.alwaysOnTop);
         setMobileMode(saved.mobileMode);
+        if (typeof saved.bilibiliWebFullscreen === 'boolean') {
+          setBilibiliWebFullscreen(saved.bilibiliWebFullscreen);
+        }
       }
       setDownloads(storedDownloads);
       setSessionReady(true);
@@ -268,9 +279,10 @@ function App() {
       url: currentUrl,
       opacity,
       alwaysOnTop: onTop,
-      mobileMode
+      mobileMode,
+      bilibiliWebFullscreen
     }).catch((error) => console.warn('session save failed:', error));
-  }, [currentUrl, mobileMode, onTop, opacity, sessionReady]);
+  }, [currentUrl, mobileMode, onTop, opacity, bilibiliWebFullscreen, sessionReady]);
 
   // history 写入 debounce: SPA 上 did-navigate-in-page (锚点变更) 会高频触发
   // recordHistory,每次都 JSON.stringify + localStorage.setItem + IPC 同步会让
@@ -361,6 +373,7 @@ function App() {
 
     offs.push(
       window.opabrow.webview.onDidFinishLoad(() => {
+        if (!bilibiliWebFullscreenRef.current) return;
         if (!isBilibiliVideoUrl(currentUrlRef.current)) return;
         void window.opabrow.webview.executeJavaScript(BILIBILI_WEB_FULLSCREEN_SCRIPT).catch((error) => {
           console.warn('Bilibili web fullscreen failed:', error);
@@ -454,6 +467,9 @@ function App() {
         case 'mobile_mode_toggle':
           setMobileMode(value === true);
           break;
+        case 'bilibili_fullscreen_toggle':
+          setBilibiliWebFullscreen(value === true);
+          break;
         case 'show_opacity_dialog':
           setShowOpacityDialog(true);
           break;
@@ -477,6 +493,9 @@ function App() {
           break;
         case 'opacity_dec':
           setOpacity((o) => Math.max(0.1, Math.round((o - 0.1) * 100) / 100));
+          break;
+        case 'check_for_updates':
+          void window.opabrow.updater.check();
           break;
       }
     });
@@ -507,6 +526,16 @@ function App() {
       setDownloads((items) => [entry, ...items.filter((item) => item.id !== entry.id)]);
       if (entry.state === 'completed') showDownloadStatus(`下载完成：${entry.filename}`);
       if (entry.state === 'failed') showDownloadStatus(`下载失败：${entry.filename}`);
+    });
+    return off;
+  }, []);
+
+  // 自动更新检测监听
+  useEffect(() => {
+    const off = window.opabrow.updater.onCheckResult((result) => {
+      if (result.available && result.info) {
+        setUpdateAvailable({ version: result.info.version, releaseUrl: result.info.releaseUrl });
+      }
     });
     return off;
   }, []);
@@ -1147,7 +1176,7 @@ function App() {
             <Pin size={14} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
-        <div className="titlebar-address">
+        <div className="titlebar-address" style={addressBarWidth > 0 ? { width: `${addressBarWidth}px`, flexBasis: `${addressBarWidth}px`, maxWidth: '80%' } : undefined}>
           {addressBarFocused ? (
             <input
               ref={addressInputRef}
@@ -1231,6 +1260,39 @@ function App() {
           )}
         </div>
         <div
+          className="address-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="拖动调整地址栏宽度"
+          title="拖动调整地址栏宽度"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            addressBarResizingRef.current = true;
+            const startX = event.clientX;
+            const startWidth = event.currentTarget.previousElementSibling instanceof HTMLElement
+              ? event.currentTarget.previousElementSibling.offsetWidth
+              : 300;
+            const onMouseMove = (e: MouseEvent): void => {
+              if (!addressBarResizingRef.current) return;
+              const delta = e.clientX - startX;
+              const newWidth = Math.max(100, startWidth + delta);
+              setAddressBarWidth(newWidth);
+            };
+            const onMouseUp = (): void => {
+              addressBarResizingRef.current = false;
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+              document.body.style.cursor = '';
+              document.body.style.userSelect = '';
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+          }}
+        />
+        <div
           className="titlebar-opacity"
           title="窗口透明度"
           onMouseDown={(event) => event.stopPropagation()}
@@ -1256,6 +1318,30 @@ function App() {
            占据标题栏 (32px) 下方区域。renderer 这里不需要占位元素。 */}
       {passwordStatus && <div className="password-status" role="status">{passwordStatus}</div>}
       {downloadStatus && <div className="password-status" role="status">{downloadStatus}</div>}
+      {updateAvailable && (
+        <div className="update-notification" role="alert">
+          <span>发现新版本 v{updateAvailable.version}</span>
+          <button
+            type="button"
+            onClick={() => {
+              void window.opabrow.updater.download();
+              setUpdateAvailable(null);
+            }}
+          >
+            下载
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void window.opabrow.updater.download(updateAvailable.releaseUrl);
+              setUpdateAvailable(null);
+            }}
+          >
+            查看详情
+          </button>
+          <button type="button" onClick={() => setUpdateAvailable(null)}>×</button>
+        </div>
+      )}
     </div>
   );
 }
