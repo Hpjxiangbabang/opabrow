@@ -4,7 +4,7 @@
 
 <h1 align="center">opabrow</h1>
 
-<p align="center"><strong>透明悬浮的 macOS 摸鱼浏览器。</strong></p>
+<p align="center"><strong>透明浮层浏览器,支持 macOS、Windows 和 Linux。</strong></p>
 
 <p align="center">
   <a href="./README.md">English</a> · <strong>简体中文</strong> · <a href="./README.ja.md">日本語</a>
@@ -12,15 +12,20 @@
 
 <p align="center">
   <a href="https://github.com/ClaytonPetrosian/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 许可证" /></a>
-  <img src="https://img.shields.io/badge/platform-macOS-111827?style=flat-square&logo=apple" alt="macOS" />
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="跨平台" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/status-early%20preview-2EA44F?style=flat-square" alt="早期预览版" />
+  <img src="https://img.shields.io/badge/version-1.0.0-2EA44F?style=flat-square" alt="v1.0.0" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/ClaytonPetrosian/opabrow/releases/latest"><img src="https://img.shields.io/badge/下载-最新版本-3B82F6?style=for-the-badge" alt="下载" /></a>
+  <a href="https://claytonpetrosian.github.io/opabrow/"><img src="https://img.shields.io/badge/官网-落地页-111827?style=for-the-badge" alt="官网" /></a>
 </p>
 
 <p align="center">上班摸鱼、随手查资料、盯住直播和看板，让想看的网页留在身边，而不是占满整个桌面。</p>
 
 <p align="center">
-  <img src="./docs/opabrow-demo.gif" width="800" alt="opabrow 浮层浏览器实际演示" />
+  <img src="./site/assets/opabrow-demo.gif" width="800" alt="opabrow 浮层浏览器实际演示" />
 </p>
 
 ## 为什么是 opabrow

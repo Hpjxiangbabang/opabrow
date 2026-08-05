@@ -4,7 +4,7 @@
 
 <h1 align="center">opabrow</h1>
 
-<p align="center"><strong>macOS 向けの透明フローティングブラウザ。</strong></p>
+<p align="center"><strong>macOS、Windows、Linux 向けの透明フローティングブラウザ。</strong></p>
 
 <p align="center">
   <a href="./README.md">English</a> · <a href="./README.zh-CN.md">简体中文</a> · <strong>日本語</strong>
@@ -12,15 +12,20 @@
 
 <p align="center">
   <a href="https://github.com/ClaytonPetrosian/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 ライセンス" /></a>
-  <img src="https://img.shields.io/badge/platform-macOS-111827?style=flat-square&logo=apple" alt="macOS" />
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="クロスプラットフォーム" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/status-early%20preview-2EA44F?style=flat-square" alt="初期プレビュー" />
+  <img src="https://img.shields.io/badge/version-1.0.0-2EA44F?style=flat-square" alt="v1.0.0" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/ClaytonPetrosian/opabrow/releases/latest"><img src="https://img.shields.io/badge/download-latest%20release-3B82F6?style=for-the-badge" alt="ダウンロード" /></a>
+  <a href="https://claytonpetrosian.github.io/opabrow/"><img src="https://img.shields.io/badge/website-landing%20page-111827?style=for-the-badge" alt="ウェブサイト" /></a>
 </p>
 
 <p align="center">仕事の合間のひと息にも、調べものにも。気になるページをそばに置き、デスクトップは占有しない。</p>
 
 <p align="center">
-  <img src="./docs/opabrow-demo.gif" width="800" alt="opabrow フローティングブラウザの実演" />
+  <img src="./site/assets/opabrow-demo.gif" width="800" alt="opabrow フローティングブラウザの実演" />
 </p>
 
 ## opabrow とは
