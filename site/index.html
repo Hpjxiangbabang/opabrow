@@ -242,6 +242,109 @@
     .faq-item h3 { font-size: 16px; margin-bottom: 6px; }
     .faq-item p { font-size: 14px; color: var(--text-muted); }
 
+    /* Use Cases */
+    .use-cases { padding: 60px 0; border-top: 1px solid var(--border); }
+    .use-case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .use-case-card {
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .use-case-card .icon { font-size: 28px; margin-bottom: 10px; }
+    .use-case-card h3 { font-size: 16px; margin-bottom: 6px; }
+    .use-case-card p { font-size: 14px; color: var(--text-muted); }
+
+    /* Quick Start */
+    .quick-start { padding: 60px 0; border-top: 1px solid var(--border); }
+    .steps {
+      max-width: 680px;
+      margin: 0 auto;
+      counter-reset: step;
+    }
+    .step {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 24px;
+      align-items: flex-start;
+    }
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .step-body h3 { font-size: 16px; margin-bottom: 4px; }
+    .step-body p { font-size: 14px; color: var(--text-muted); }
+    .step-body code {
+      display: inline-block;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    /* Tech Stack */
+    .tech-stack { padding: 60px 0; border-top: 1px solid var(--border); }
+    .tech-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .tech-item {
+      padding: 8px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 14px;
+    }
+    .tech-item strong { color: var(--accent); }
+
+    /* Changelog */
+    .changelog { padding: 60px 0; border-top: 1px solid var(--border); }
+    .changelog-list {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .changelog-item {
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    .changelog-item .version {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .changelog-item ul { list-style: none; padding: 0; }
+    .changelog-item li { font-size: 14px; color: var(--text-muted); padding: 2px 0; }
+    .changelog-item li::before { content: "+ "; color: #22c55e; font-weight: 700; }
+
     @media (max-width: 600px) {
       .hero { padding: 50px 0 40px; }
       .cta-group { flex-direction: column; align-items: center; }
@@ -366,6 +469,136 @@
     <div class="faq-item">
       <h3>如何配置自动更新检测?</h3>
       <p>应用会在 userData 目录下读取 update-source.json 配置文件。可配置 GitLab 或 GitHub 作为更新源。启动后自动检查,也可通过菜单「显示」>「检查更新…」手动触发。</p>
+    </div>
+  </div>
+</section>
+
+<section class="use-cases">
+  <div class="container">
+    <h2 class="section-title">使用场景</h2>
+    <div class="use-case-grid">
+      <div class="use-case-card">
+        <div class="icon">💻</div>
+        <h3>上班摸鱼</h3>
+        <p>调节窗口透明度至 30%，置顶在工作窗口上方。老板走近时一键调低透明度，工作浏览两不误。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📺</div>
+        <h3>边看视频边工作</h3>
+        <p>开启点击穿透，视频窗口浮在最上层但不阻挡鼠标操作。可以在编辑器里打字的同时看视频。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📱</div>
+        <h3>移动端网页测试</h3>
+        <p>一键切换手机 User-Agent，以移动端布局预览网页。前端开发者调试响应式布局的利器。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">🔍</div>
+        <h3>快速资料查阅</h3>
+        <p>选中文字右键即可 Google 搜索，无需切换窗口。地址栏可拖拽调整宽度，适应不同网页。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">🎵</div>
+        <h3>B站音乐/播客背景播放</h3>
+        <p>B站视频自动网页全屏，配合透明度和点击穿透，边听播客边工作，不占用屏幕空间。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📖</div>
+        <h3>在线阅读文档</h3>
+        <p>将文档页面以浮层形式置顶，在编写代码的同时参考文档，无需在多个窗口间来回切换。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="quick-start">
+  <div class="container">
+    <h2 class="section-title">快速上手</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-body">
+          <h3>下载安装</h3>
+          <p>从 GitHub Releases 下载对应平台的安装包。macOS 拖入 Applications，Windows 运行 NSIS 安装程序，Linux 使用 AppImage。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>调节透明度</h3>
+          <p>打开应用后，通过托盘菜单或快捷键调节窗口透明度。10% 几乎隐形，100% 完全不透明。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>开启置顶与穿透</h3>
+          <p>在托盘菜单中勾选「窗口置顶」和「点击穿透」。置顶让窗口始终在最上层，穿透让鼠标可以操作下方窗口。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>导入书签和密码</h3>
+          <p>支持从 Chrome / Safari 导入书签，从 Chrome 导出密码 CSV 文件后导入。在托盘菜单中选择对应选项即可。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>配置自动更新（可选）</h3>
+          <p>在 <code>userData/update-source.json</code> 中配置 GitLab 或 GitHub 更新源，应用启动后自动检查新版本。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tech-stack">
+  <div class="container">
+    <h2 class="section-title">技术栈</h2>
+    <div class="tech-grid">
+      <span class="tech-item"><strong>Electron 43</strong> 跨平台桌面框架</span>
+      <span class="tech-item"><strong>React 19</strong> UI 渲染层</span>
+      <span class="tech-item"><strong>TypeScript</strong> 类型安全</span>
+      <span class="tech-item"><strong>electron-vite</strong> 构建工具</span>
+      <span class="tech-item"><strong>WebContentsView</strong> 网页内容渲染</span>
+      <span class="tech-item"><strong>Node.js HTTPS</strong> 自动更新检测</span>
+      <span class="tech-item"><strong>SemVer</strong> 版本比较</span>
+      <span class="tech-item"><strong>electron-builder</strong> 打包发布</span>
+    </div>
+  </div>
+</section>
+
+<section class="changelog">
+  <div class="container">
+    <h2 class="section-title">更新日志</h2>
+    <div class="changelog-list">
+      <div class="changelog-item">
+        <span class="version">v1.0.0</span>
+        <ul>
+          <li>自动更新检测：支持 GitLab / GitHub Releases API</li>
+          <li>Windows 兼容性：修复托盘图标显示，新增透明度调节弹窗</li>
+          <li>右键上下文菜单：复制、搜索、粘贴、打开链接等</li>
+          <li>可拖拽地址栏：最小宽度 100px 自由调整</li>
+          <li>B站视频网页全屏可关闭：菜单中一键切换</li>
+          <li>SEO 落地页：三语支持（中/英/日），结构化数据</li>
+        </ul>
+      </div>
+      <div class="changelog-item">
+        <span class="version">v0.3.x</span>
+        <ul>
+          <li>书签管理：Chrome / Safari 书签导入</li>
+          <li>密码管理：Chrome 密码 CSV 导入与自动填充</li>
+          <li>历史记录：本地浏览历史管理</li>
+          <li>手机模式：User-Agent 切换</li>
+          <li>多标签页：标签页管理</li>
+        </ul>
+      </div>
+      <div class="changelog-item">
+        <span class="version">v0.1.x - v0.2.x</span>
+        <ul>
+          <li>透明窗口：10%-100% 透明度调节</li>
+          <li>置顶显示：窗口始终在最上层</li>
+          <li>点击穿透：鼠标可操作下方窗口</li>
+          <li>标题栏悬停检测：自动显示/隐藏标题栏</li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>

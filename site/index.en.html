@@ -242,6 +242,109 @@
     .faq-item h3 { font-size: 16px; margin-bottom: 6px; }
     .faq-item p { font-size: 14px; color: var(--text-muted); }
 
+    /* Use Cases */
+    .use-cases { padding: 60px 0; border-top: 1px solid var(--border); }
+    .use-case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .use-case-card {
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .use-case-card .icon { font-size: 28px; margin-bottom: 10px; }
+    .use-case-card h3 { font-size: 16px; margin-bottom: 6px; }
+    .use-case-card p { font-size: 14px; color: var(--text-muted); }
+
+    /* Quick Start */
+    .quick-start { padding: 60px 0; border-top: 1px solid var(--border); }
+    .steps {
+      max-width: 680px;
+      margin: 0 auto;
+      counter-reset: step;
+    }
+    .step {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 24px;
+      align-items: flex-start;
+    }
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .step-body h3 { font-size: 16px; margin-bottom: 4px; }
+    .step-body p { font-size: 14px; color: var(--text-muted); }
+    .step-body code {
+      display: inline-block;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    /* Tech Stack */
+    .tech-stack { padding: 60px 0; border-top: 1px solid var(--border); }
+    .tech-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .tech-item {
+      padding: 8px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 14px;
+    }
+    .tech-item strong { color: var(--accent); }
+
+    /* Changelog */
+    .changelog { padding: 60px 0; border-top: 1px solid var(--border); }
+    .changelog-list {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .changelog-item {
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    .changelog-item .version {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .changelog-item ul { list-style: none; padding: 0; }
+    .changelog-item li { font-size: 14px; color: var(--text-muted); padding: 2px 0; }
+    .changelog-item li::before { content: "+ "; color: #22c55e; font-weight: 700; }
+
     @media (max-width: 600px) {
       .hero { padding: 50px 0 40px; }
       .cta-group { flex-direction: column; align-items: center; }
@@ -366,6 +469,136 @@
     <div class="faq-item">
       <h3>How do I configure auto update detection?</h3>
       <p>The app reads the update-source.json config file in the userData directory. You can configure GitLab or GitHub as the update source. It checks automatically on startup, or you can trigger it manually via View &gt; Check for Updates...</p>
+    </div>
+  </div>
+</section>
+
+<section class="use-cases">
+  <div class="container">
+    <h2 class="section-title">Use Cases</h2>
+    <div class="use-case-grid">
+      <div class="use-case-card">
+        <div class="icon">💻</div>
+        <h3>Working & Browsing</h3>
+        <p>Adjust window opacity to 30% and pin it above your work windows. Lower the opacity in one click when the boss approaches — work and browsing without conflict.</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📺</div>
+        <h3>Video While Working</h3>
+        <p>Enable click-through so the video window floats on top without blocking mouse input. Type in your editor while watching a video at the same time.</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📱</div>
+        <h3>Mobile Web Testing</h3>
+        <p>Switch to a mobile User-Agent in one click to preview pages in mobile layout. A handy tool for frontend developers debugging responsive layouts.</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">🔍</div>
+        <h3>Quick Reference</h3>
+        <p>Select text and right-click to search on Google without switching windows. The address bar width is drag-adjustable to fit different pages.</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">🎵</div>
+        <h3>Bilibili Background Play</h3>
+        <p>Bilibili videos auto-enter webpage fullscreen; combined with opacity and click-through, you can listen to podcasts while working without taking up screen space.</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📖</div>
+        <h3>Reading Documentation</h3>
+        <p>Pin documentation pages as an overlay and reference them while writing code, without switching back and forth between windows.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="quick-start">
+  <div class="container">
+    <h2 class="section-title">Quick Start</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-body">
+          <h3>Download &amp; Install</h3>
+          <p>Download the installer for your platform from GitHub Releases. Drag into Applications on macOS, run the NSIS installer on Windows, or use the AppImage on Linux.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>Adjust Transparency</h3>
+          <p>After opening the app, adjust window opacity via the tray menu or keyboard shortcuts. 10% is nearly invisible, 100% is fully opaque.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>Enable Always-on-top &amp; Click-through</h3>
+          <p>Check "Always on Top" and "Click Through" in the tray menu. Always-on-top keeps the window on the top layer; click-through lets the mouse operate the window underneath.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>Import Bookmarks &amp; Passwords</h3>
+          <p>Import bookmarks from Chrome / Safari, and import passwords by exporting a CSV file from Chrome. Select the corresponding options in the tray menu.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>Configure Auto-update (Optional)</h3>
+          <p>Configure a GitLab or GitHub update source in <code>userData/update-source.json</code>. The app checks for new versions automatically on startup.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tech-stack">
+  <div class="container">
+    <h2 class="section-title">Tech Stack</h2>
+    <div class="tech-grid">
+      <span class="tech-item"><strong>Electron 43</strong> Cross-platform desktop framework</span>
+      <span class="tech-item"><strong>React 19</strong> UI rendering layer</span>
+      <span class="tech-item"><strong>TypeScript</strong> Type safety</span>
+      <span class="tech-item"><strong>electron-vite</strong> Build tool</span>
+      <span class="tech-item"><strong>WebContentsView</strong> Web content rendering</span>
+      <span class="tech-item"><strong>Node.js HTTPS</strong> Auto-update detection</span>
+      <span class="tech-item"><strong>SemVer</strong> Version comparison</span>
+      <span class="tech-item"><strong>electron-builder</strong> Packaging &amp; publishing</span>
+    </div>
+  </div>
+</section>
+
+<section class="changelog">
+  <div class="container">
+    <h2 class="section-title">Changelog</h2>
+    <div class="changelog-list">
+      <div class="changelog-item">
+        <span class="version">v1.0.0</span>
+        <ul>
+          <li>Auto-update detection: supports GitLab / GitHub Releases API</li>
+          <li>Windows compatibility: fixed tray icon display, added opacity adjustment popup</li>
+          <li>Right-click context menu: copy, search, paste, open links, and more</li>
+          <li>Resizable address bar: freely adjustable with a 100px minimum</li>
+          <li>Bilibili video webpage fullscreen can be disabled: toggle in one click from the menu</li>
+          <li>SEO landing page: trilingual support (Chinese/English/Japanese), structured data</li>
+        </ul>
+      </div>
+      <div class="changelog-item">
+        <span class="version">v0.3.x</span>
+        <ul>
+          <li>Bookmark management: Chrome / Safari bookmark import</li>
+          <li>Password management: Chrome password CSV import and auto-fill</li>
+          <li>History: local browsing history management</li>
+          <li>Mobile mode: User-Agent switching</li>
+          <li>Multi-tab: tab management</li>
+        </ul>
+      </div>
+      <div class="changelog-item">
+        <span class="version">v0.1.x - v0.2.x</span>
+        <ul>
+          <li>Transparent window: 10%-100% opacity adjustment</li>
+          <li>Always-on-top: window stays on the top layer</li>
+          <li>Click-through: mouse can operate the window underneath</li>
+          <li>Title bar hover detection: auto show/hide the title bar</li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>

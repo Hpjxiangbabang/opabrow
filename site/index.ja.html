@@ -242,6 +242,109 @@
     .faq-item h3 { font-size: 16px; margin-bottom: 6px; }
     .faq-item p { font-size: 14px; color: var(--text-muted); }
 
+    /* Use Cases */
+    .use-cases { padding: 60px 0; border-top: 1px solid var(--border); }
+    .use-case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .use-case-card {
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .use-case-card .icon { font-size: 28px; margin-bottom: 10px; }
+    .use-case-card h3 { font-size: 16px; margin-bottom: 6px; }
+    .use-case-card p { font-size: 14px; color: var(--text-muted); }
+
+    /* Quick Start */
+    .quick-start { padding: 60px 0; border-top: 1px solid var(--border); }
+    .steps {
+      max-width: 680px;
+      margin: 0 auto;
+      counter-reset: step;
+    }
+    .step {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 24px;
+      align-items: flex-start;
+    }
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .step-body h3 { font-size: 16px; margin-bottom: 4px; }
+    .step-body p { font-size: 14px; color: var(--text-muted); }
+    .step-body code {
+      display: inline-block;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    /* Tech Stack */
+    .tech-stack { padding: 60px 0; border-top: 1px solid var(--border); }
+    .tech-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .tech-item {
+      padding: 8px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 14px;
+    }
+    .tech-item strong { color: var(--accent); }
+
+    /* Changelog */
+    .changelog { padding: 60px 0; border-top: 1px solid var(--border); }
+    .changelog-list {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .changelog-item {
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    .changelog-item .version {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .changelog-item ul { list-style: none; padding: 0; }
+    .changelog-item li { font-size: 14px; color: var(--text-muted); padding: 2px 0; }
+    .changelog-item li::before { content: "+ "; color: #22c55e; font-weight: 700; }
+
     @media (max-width: 600px) {
       .hero { padding: 50px 0 40px; }
       .cta-group { flex-direction: column; align-items: center; }
@@ -366,6 +469,136 @@
     <div class="faq-item">
       <h3>自動更新チェックを設定するには?</h3>
       <p>アプリは userData ディレクトリ内の update-source.json 設定ファイルを読み取ります。GitLab または GitHub を更新ソースとして設定可能です。起動後に自動チェックしますが、メニュー「表示」>「更新を確認…」から手動で実行することもできます。</p>
+    </div>
+  </div>
+</section>
+
+<section class="use-cases">
+  <div class="container">
+    <h2 class="section-title">使用シーン</h2>
+    <div class="use-case-grid">
+      <div class="use-case-card">
+        <div class="icon">💻</div>
+        <h3>仕事中のこっそり閲覧</h3>
+        <p>ウィンドウの透明度を30%に調整し、作業ウィンドウの上に最前面表示。上司が近づいたらワンクリックで透明度を下げ、仕事と閲覧を両立。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📺</div>
+        <h3>動画を見ながら作業</h3>
+        <p>クリック透過を有効にし、動画ウィンドウを最前面に浮かせてもマウス操作を妨げません。エディタで入力しながら動画を視聴できます。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📱</div>
+        <h3>モバイル Web ページのテスト</h3>
+        <p>ワンクリックでモバイル User-Agent に切り替え、モバイル向けレイアウトで Web ページをプレビュー。フロントエンド開発者のレスポンシブレイアウトのデバッグに最適。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">🔍</div>
+        <h3>素早い資料検索</h3>
+        <p>テキストを選択して右クリックするだけで Google 検索可能、ウィンドウ切替不要。アドレスバーはドラッグで幅を調整でき、さまざまな Web ページに対応。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">🎵</div>
+        <h3>Bilibili 音楽・ポッドキャストのバックグラウンド再生</h3>
+        <p>Bilibili 動画を自動で Web ページ全画面表示し、透明度とクリック透過を組み合わせることで、ポッドキャストを聴きながら作業でき、画面スペースも占有しません。</p>
+      </div>
+      <div class="use-case-card">
+        <div class="icon">📖</div>
+        <h3>オンラインでドキュメントを閲覧</h3>
+        <p>ドキュメントページをオーバーレイとして最前面表示し、コードを書きながらドキュメントを参照。複数ウィンドウを切り替える手間が省けます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="quick-start">
+  <div class="container">
+    <h2 class="section-title">クイックスタート</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-body">
+          <h3>ダウンロード・インストール</h3>
+          <p>GitHub Releases からお使いのプラットフォームのインストーラーをダウンロード。macOS は Applications にドラッグ、Windows は NSIS インストーラーを実行、Linux は AppImage を使用します。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>透明度を調整</h3>
+          <p>アプリを起動後、トレイメニューまたはショートカットキーでウィンドウの透明度を調整。10% でほぼ透明、100% で完全不透明になります。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>最前面表示とクリック透過を有効化</h3>
+          <p>トレイメニューで「ウィンドウを最前面に表示」と「クリック透過」にチェックを入れます。最前面表示でウィンドウが常に最前面に、クリック透過でマウスが下のウィンドウを操作できるようになります。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>ブックマークとパスワードをインポート</h3>
+          <p>Chrome / Safari からのブックマークインポート、Chrome からエクスポートしたパスワード CSV ファイルのインポートに対応。トレイメニューから該当オプションを選択するだけです。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-body">
+          <h3>自動更新を設定（任意）</h3>
+          <p><code>userData/update-source.json</code> で GitLab または GitHub の更新ソースを設定すると、アプリ起動後に新バージョンを自動的にチェックします。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tech-stack">
+  <div class="container">
+    <h2 class="section-title">技術スタック</h2>
+    <div class="tech-grid">
+      <span class="tech-item"><strong>Electron 43</strong> クロスプラットフォームデスクトップフレームワーク</span>
+      <span class="tech-item"><strong>React 19</strong> UI レンダリング層</span>
+      <span class="tech-item"><strong>TypeScript</strong> 型安全性</span>
+      <span class="tech-item"><strong>electron-vite</strong> ビルドツール</span>
+      <span class="tech-item"><strong>WebContentsView</strong> Web コンテンツレンダリング</span>
+      <span class="tech-item"><strong>Node.js HTTPS</strong> 自動更新検出</span>
+      <span class="tech-item"><strong>SemVer</strong> バージョン比較</span>
+      <span class="tech-item"><strong>electron-builder</strong> パッケージング・公開</span>
+    </div>
+  </div>
+</section>
+
+<section class="changelog">
+  <div class="container">
+    <h2 class="section-title">更新履歴</h2>
+    <div class="changelog-list">
+      <div class="changelog-item">
+        <span class="version">v1.0.0</span>
+        <ul>
+          <li>自動更新検出：GitLab / GitHub Releases API に対応</li>
+          <li>Windows 互換性：トレイアイコン表示を修正、透明度調整ポップアップを追加</li>
+          <li>右クリックコンテキストメニュー：コピー、検索、貼り付け、リンクを開くなど</li>
+          <li>ドラッグ可能なアドレスバー：最小幅 100px で自由に調整</li>
+          <li>Bilibili 動画の Web ページ全画面をオフに可能：メニューからワンクリックで切替</li>
+          <li>SEO ランディングページ：3 言語対応（中/英/日）、構造化データ</li>
+        </ul>
+      </div>
+      <div class="changelog-item">
+        <span class="version">v0.3.x</span>
+        <ul>
+          <li>ブックマーク管理：Chrome / Safari のブックマークインポート</li>
+          <li>パスワード管理：Chrome パスワード CSV のインポートと自動入力</li>
+          <li>履歴：ローカル閲覧履歴の管理</li>
+          <li>モバイルモード：User-Agent の切替</li>
+          <li>マルチタブ：タブの管理</li>
+        </ul>
+      </div>
+      <div class="changelog-item">
+        <span class="version">v0.1.x - v0.2.x</span>
+        <ul>
+          <li>透明ウィンドウ：10%-100% の透明度調整</li>
+          <li>最前面表示：ウィンドウを常に最前面に</li>
+          <li>クリック透過：マウスで下のウィンドウを操作可能</li>
+          <li>タイトルバーのホバー検出：自動でタイトルバーを表示/非表示</li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>
