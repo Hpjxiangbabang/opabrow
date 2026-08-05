@@ -10,6 +10,7 @@ describe('session sanitization', () => {
         alwaysOnTop: true,
         clickThrough: false,
         mobileMode: true,
+        bilibiliWebFullscreen: false,
         bounds: { x: 10, y: 20, width: 640, height: 480 },
         downloads: [{
           id: 'download-1',
@@ -28,9 +29,18 @@ describe('session sanitization', () => {
       alwaysOnTop: true,
       clickThrough: false,
       mobileMode: true,
+      bilibiliWebFullscreen: false,
       bounds: { x: 10, y: 20, width: 640, height: 480 },
       downloads: [{ id: 'download-1', state: 'completed' }]
     });
+  });
+
+  it('defaults bilibiliWebFullscreen to true when absent', () => {
+    expect(sanitizeSession({}).bilibiliWebFullscreen).toBe(true);
+  });
+
+  it('accepts bilibiliWebFullscreen in session patch', () => {
+    expect(sanitizeSessionPatch({ bilibiliWebFullscreen: false })).toEqual({ bilibiliWebFullscreen: false });
   });
 
   it('rejects unsafe renderer patches', () => {
