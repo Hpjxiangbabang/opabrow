@@ -3,6 +3,24 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有版本基于 MPL-2.0 继续开源，
 源码仓库：<https://github.com/Hpjxiangbabang/opabrow>。
 
+## [1.1.1] - 2026-11-06
+
+修复 v1.1.0 用户实测反馈的四个问题。问题记录、调研与验收标准见 [TESTING.md](TESTING.md)。
+
+### 修复
+- **T-01 安装目录**：`build/installer.nsh` 新增 `customInit` 规范化 `$INSTDIR`，目录选择页默认即显示带 `FloatPane` 子目录的完整路径；用户改选任意父目录后，electron-builder 的 `instFilesPre` 仍会兜底追加，安装文件不再散落在父目录根部；目录页补充路径说明；卸载完成后移除空的产品目录。
+- **T-02 平台适配**：渲染层 tooltip 按平台显示 `Ctrl+W` / `Ctrl+Shift+G`（macOS 仍为 `⌘W` / `⌘⇧G`）；Windows 上不再显示并不存在的「最小化」快捷键；标题栏控制按钮 macOS 靠左、Windows/Linux 靠右并反转组内顺序（关闭在最右）。`preload` 新增 `platform` 字段。
+- **T-03 主题配色**：标题栏、地址栏文字与底色、下拉建议、透明度滑块全部改用 `--ui-fg` / `--ui-bg`，并修正数处前后景变量颠倒的 `color-mix`；深浅色切换不再有浅色残留或深底深字。
+- **T-04 置顶交互**：`clickThrough` 默认改为 `false`，置顶不再附带全窗口穿透。「置顶时点击穿透」升级为「鼠标移出窗口时自动穿透」，由主进程按窗口矩形轮询判定（40ms 间隔、移出 120ms 延迟并二次确认）：光标在窗口内完全可交互，移出后事件落到下层应用。方案对比与决策依据见 `TESTING.md`。
+
+### 其它
+- `session.test.ts` 新增 1 个用例（15 → 16）；新增 `TESTING.md`。
+- `release.yml` 改为仅 `workflow_dispatch` 触发，建立「实测后再发布」闸门；`v1.1.0` 标签已推送且未产生 Release。
+
+### 限制
+- 四项改动通过类型检查、单测、构建与打包验证，**尚未做 GUI 交互实测**，需按 `TESTING.md` 的验收方式人工确认。
+- 自动穿透采用窗口矩形命中测试，透明区域也会触发激活，且约有 40ms 轮询延迟；这是窗口级 API 的固有限制。
+
 ## [1.1.0] - 2026-11-06
 
 首个二次开发版本。基于上游 `ClaytonPetrosian/opabrow` 的 `4bab39e`（v1.0.0）快照。
@@ -45,5 +63,6 @@
 
 上游 `ClaytonPetrosian/opabrow` 的零改动快照（提交 `4bab39e`）。功能与变更见上游仓库。
 
+[1.1.1]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.0
 [1.0.0]: https://github.com/ClaytonPetrosian/opabrow

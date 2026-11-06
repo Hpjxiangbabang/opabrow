@@ -14,7 +14,7 @@
   <a href="https://github.com/Hpjxiangbabang/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 license" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="Cross-platform" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/version-1.1.0-2EA44F?style=flat-square" alt="v1.1.0" />
+  <img src="https://img.shields.io/badge/version-1.1.1-2EA44F?style=flat-square" alt="v1.1.1" />
 </p>
 
 <p align="center">
@@ -168,6 +168,7 @@ Bug reports, design feedback and focused pull requests are welcome. Please read 
   are all redirected to `FloatPane-data/` next to the executable, so they follow the chosen install
   location and are removed by the uninstaller (`build/installer.nsh`). View / tray menu -> Data
   management to open the folder or clear caches and cookies. Downloads stay in the OS Downloads folder.
+- **Always-on-top interaction (v1.1.1)**: pinning stays fully interactive by default; optionally enable "auto click-through when the cursor leaves the window" from the View / tray menu. Rationale in `TESTING.md`.
 - **Tray-only mode**: hides the window from the taskbar; minimize and close become hide, and the window
   is restored from the tray. The tray menu's Quit is the real exit. The setting persists.
 

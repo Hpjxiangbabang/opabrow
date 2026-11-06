@@ -88,6 +88,7 @@ export type UpdateSourceConfig = {
 };
 
 const api = {
+  platform: process.platform,
   // 窗口控制
   setOpacity: (opacity: number) => ipcRenderer.invoke('set-opacity', opacity),
   setAlwaysOnTop: (onTop: boolean) => ipcRenderer.invoke('set-always-on-top', onTop),

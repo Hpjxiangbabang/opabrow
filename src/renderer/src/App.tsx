@@ -11,6 +11,19 @@ const HOME_URL_STORAGE_KEY = 'opabrow.home-url';
 const HISTORY_LIMIT = 100;
 const ADDRESS_SUGGESTION_LIMIT = 5;
 
+// T-02: 平台感知的快捷键标签与标题栏布局。
+// 菜单 accelerator 用 CmdOrCtrl（Electron 会按平台显示），渲染层 tooltip 需自行格式化。
+const platformName =
+  typeof window === 'undefined'
+    ? 'win32'
+    : window.opabrow?.platform ?? navigator.platform ?? 'win32';
+const isMac = /Mac|Darwin/i.test(platformName);
+const modLabel = isMac ? 'Mod+' : 'Ctrl';
+const shortcutLabel = (key: string, withShift = false): string =>
+  isMac
+    ? `${modLabel}${withShift ? '⇧' : ''}${key}`
+    : [modLabel, withShift ? 'Shift' : '', key].filter(Boolean).join('+');
+
 type HistoryEntry = {
   url: string;
   title: string;
@@ -593,7 +606,7 @@ function App() {
     };
   }, []);
 
-  // 备份:⌘L / ⌘+[ / ⌘+] 在 renderer 内也能响应
+  // 备份:Mod+L / Mod++[ / Mod++] 在 renderer 内也能响应
   // webview 焦点时键盘事件全进 webview,renderer 收不到 keydown,所以主路径走菜单 accelerator
   // 但这里保留 keydown 监听作为兜底(比如 webview 未 focus 时的菜单栏使用)
   useEffect(() => {
@@ -604,31 +617,31 @@ function App() {
       const editing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
       if (editing) return;
 
-      // ⌘+[ 后退
+      // Mod++[ 后退
       if (e.key === '[' && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         void window.opabrow.webview.goBack().catch((err) => console.warn('goBack failed:', err));
         return;
       }
-      // ⌘+] 前进
+      // Mod++] 前进
       if (e.key === ']' && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         void window.opabrow.webview.goForward().catch((err) => console.warn('goForward failed:', err));
         return;
       }
-      // ⌘R 刷新
+      // Mod+R 刷新
       if (e.key.toLowerCase() === 'r' && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         reload();
         return;
       }
-      // ⌘T 置顶
+      // Mod+T 置顶
       if (e.key.toLowerCase() === 't' && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         setOnTop((v) => !v);
         return;
       }
-      // ⌘= / ⌘- 透明度
+      // Mod+= / Mod+- 透明度
       if ((e.key === '=' || e.key === '+') && !e.altKey) {
         e.preventDefault();
         setOpacity((o) => Math.min(1, Math.round((o + 0.1) * 100) / 100));
@@ -639,19 +652,19 @@ function App() {
         setOpacity((o) => Math.max(0.1, Math.round((o - 0.1) * 100) / 100));
         return;
       }
-      // ⌘⇧H 回到主页
+      // Mod+Shift+H 回到主页
       if (e.key.toLowerCase() === 'h' && e.shiftKey && !e.altKey) {
         e.preventDefault();
         void goUrl(homeUrlRef.current);
         return;
       }
-      // ⌘L
+      // Mod+L
       if (e.key === 'l' && !e.shiftKey) {
         e.preventDefault();
         focusAddressBar();
         return;
       }
-      // ⌘F / ⌘G 页面内查找
+      // Mod+F / Mod+G 页面内查找
       if (e.key.toLowerCase() === 'f' && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         openFind();
@@ -888,7 +901,7 @@ function App() {
             <button
               className={`quick-toggle ${onTop ? 'on' : ''}`}
               onClick={() => setOnTop((v) => !v)}
-              title="切换置顶 (⌘T)"
+              title={`切换置顶 (${shortcutLabel('T')})`}
             >
               {onTop ? '📌 已置顶' : '📍 未置顶'}
             </button>
@@ -921,10 +934,10 @@ function App() {
           <output className="find-count" aria-live="polite">
             {findQuery.trim() ? `${findResult.activeMatchOrdinal || 0}/${findResult.matches}` : ''}
           </output>
-          <button type="button" className="find-button" title="上一个匹配项 (⌘⇧G)" aria-label="上一个匹配项" onClick={() => findNext(false)}>
+          <button type="button" className="find-button" title={`上一个匹配项 (${shortcutLabel('G', true)})`} aria-label="上一个匹配项" onClick={() => findNext(false)}>
             <ChevronUp size={15} aria-hidden="true" />
           </button>
-          <button type="button" className="find-button" title="下一个匹配项 (⌘G)" aria-label="下一个匹配项" onClick={() => findNext(true)}>
+          <button type="button" className="find-button" title={`下一个匹配项 (${shortcutLabel('G')})`} aria-label="下一个匹配项" onClick={() => findNext(true)}>
             <ChevronDown size={15} aria-hidden="true" />
           </button>
           <button type="button" className="dialog-close" title="关闭 (ESC)" aria-label="关闭查找" onClick={closeFind}>×</button>
@@ -1152,6 +1165,7 @@ function App() {
       {/* 顶部 32px 独立标题栏:始终占位,默认透明,不覆盖网页区域。 */}
       <div
         className={`titlebar ${titlebarVisible || addressBarFocused ? 'visible' : ''}`}
+        data-platform={platformName}
         title="拖动窗口"
         onMouseEnter={() => setTitlebarHoveredByDom(true)}
         onMouseLeave={() => setTitlebarHoveredByDom(false)}
@@ -1165,7 +1179,7 @@ function App() {
             type="button"
             className="traffic-button close"
             aria-label="关闭窗口"
-            title="关闭窗口 (⌘W)"
+            title={`关闭窗口 (${shortcutLabel('W')})`}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={() => window.opabrow.closeWindow()}
           >
@@ -1175,7 +1189,7 @@ function App() {
             type="button"
             className="traffic-button minimize"
             aria-label="最小化窗口"
-            title="最小化窗口 (⌘M)"
+            title={isMac ? `最小化窗口 (${shortcutLabel('M')})` : '最小化窗口'}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={() => window.opabrow.minimizeWindow()}
           >
@@ -1186,7 +1200,7 @@ function App() {
             className={`titlebar-icon-button ${onTop ? 'active' : ''}`}
             aria-label={onTop ? '取消置顶' : '置顶窗口'}
             aria-pressed={onTop}
-            title={onTop ? '取消置顶 (⌘T)' : '置顶窗口 (⌘T)'}
+            title={`${onTop ? '取消置顶' : '置顶窗口'} (${shortcutLabel('T')})`}
             onMouseDown={(event) => event.stopPropagation()}
             onClick={() => setOnTop((value) => !value)}
           >
@@ -1247,7 +1261,7 @@ function App() {
             <button
               type="button"
               className="titlebar-address-preview"
-              title="编辑地址 (⌘L)"
+              title={`编辑地址 (${shortcutLabel('L')})`}
               onMouseDown={(event) => event.stopPropagation()}
               onClick={focusAddressBar}
             >

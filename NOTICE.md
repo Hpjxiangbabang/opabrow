@@ -4,7 +4,7 @@ This product is a derivative of [ClaytonPetrosian/opabrow](https://github.com/Cl
 used under the Mozilla Public License 2.0 (see LICENSE). All modified and MPL-covered source files
 remain licensed under MPL-2.0; no upstream copyright or license notices have been removed.
 
-Modifications made on 2026-11-06 (release v1.1.0):
+Modifications made on 2026-11-06 (releases v1.1.0 and v1.1.1):
 - Rebranded to FloatPane: name, appId, window/menu/tray text, icons; upstream links and the
   upstream Google site-verification file removed; AppUserModelId unified.
 - Pinned the package manager to pnpm 12.18.0 via the `packageManager` field.
@@ -15,6 +15,11 @@ Modifications made on 2026-11-06 (release v1.1.0):
   crash dumps and logs, with menu actions to open it or clear caches/cookies, and NSIS uninstall
   cleanup. New module: `src/main/dataPaths.ts`, `build/installer.nsh`.
 - Tray-only mode: hidden from the taskbar, minimize/close hide the window, restore from tray.
+- v1.1.1 fixes from user testing: installer appends a product subdirectory to any chosen
+  install path; platform-aware shortcut labels and title bar button placement; title bar and
+  address bar now follow the light/dark theme; always-on-top is fully interactive by default,
+  with an optional cursor-driven auto click-through mode. New module: `TESTING.md`.
+- Release gating: publishing now requires a manual `workflow_dispatch` run with a verified tag.
 
 Trademarks, logos and branding of the upstream project are not licensed under MPL-2.0 (Sec. 2.3);
 this derivative therefore uses its own name and artwork.

@@ -41,7 +41,7 @@ const DEFAULT_SESSION: AppSession = {
   url: null,
   opacity: 1,
   alwaysOnTop: false,
-  clickThrough: true,
+  clickThrough: false,
   mobileMode: false,
   bilibiliWebFullscreen: true,
   bounds: null,
@@ -128,7 +128,8 @@ export function sanitizeSession(value: unknown): AppSession {
       ? Math.min(1, Math.max(0.1, session.opacity))
       : DEFAULT_SESSION.opacity,
     alwaysOnTop: session.alwaysOnTop === true,
-    clickThrough: session.clickThrough !== false,
+    // v1.1.1: 缺失值时默认关闭；旧数据中显式 true 仍保留，但语义已升级为「移出窗口自动穿透」。
+    clickThrough: session.clickThrough === true,
     mobileMode: session.mobileMode === true,
     bilibiliWebFullscreen: session.bilibiliWebFullscreen !== false,
     bounds: sanitizeBounds(session.bounds),

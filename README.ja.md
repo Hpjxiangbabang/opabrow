@@ -14,7 +14,7 @@
   <a href="https://github.com/Hpjxiangbabang/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 ライセンス" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="クロスプラットフォーム" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/version-1.1.0-2EA44F?style=flat-square" alt="v1.1.0" />
+  <img src="https://img.shields.io/badge/version-1.1.1-2EA44F?style=flat-square" alt="v1.1.1" />
 </p>
 
 <p align="center">
@@ -157,6 +157,7 @@ pnpm build
 - **明示的なテーマ切替**：表示 / トレイメニュー → 外観テーマ → ライト / ダーク / システムに従う。既定はライトで、OS 設定には追従しません。選択は `session.json` に保存され、アプリ UI と Web ページの `prefers-color-scheme` の両方に適用されます。
 - **画面キャプチャ防止**：表示 / トレイメニューのスイッチで `BrowserWindow.setContentProtection(true)` を有効化します。物理的なカメラ撮影、キャプチャカード、高権限のキャプチャツールは防げません。Linux の対応は限定的です。
 - **単一データディレクトリ（アンインストール後に残さない）**：`userData`、`sessionData`、キャッシュ、Cookie、一時ファイル、クラッシュダンプ、ログを実行ファイル隣の `FloatPane-data/` に集約します。インストール先に追従し、アンインストーラー（`build/installer.nsh`）が削除します。表示 / トレイメニュー → データ管理からディレクトリを開く、キャッシュと Cookie を削除できます。ダウンロードファイルは OS のダウンロードフォルダーに残ります（ユーザー資産のため自動削除しません）。
+- **最前面表示の操作（v1.1.1）**：既定では最前面表示でも完全に操作できます。必要に応じて表示 / トレイメニューから「カーソルがウィンドウ外に出たら自動透過」を有効にできます。設計根拠は `TESTING.md` を参照。
 - **トレイのみモード**：表示 / トレイメニュー → トレイのみモード。有効にするとタスクバーに表示されず、最小化と閉じるは「隠す」になり、トレイアイコンのクリックまたはトレイメニューから復帰します。終了はトレイメニューの「終了」のみです。設定は保持されます。
 
 ## ライセンス

@@ -24,7 +24,9 @@ let bookmarkStore: BookmarkStore | null = null;
 let passwordStore: PasswordStore | null = null;
 let sessionStore: SessionStore | null = null;
 let mobileModeEnabled = false;
-let clickThroughEnabled = true;
+let clickThroughEnabled = false;
+// 光标是否位于窗口矩形内；仅在自动穿透模式下影响窗口交互状态。
+let cursorInsideWindow = true;
 let themeMode: ThemeMode = 'light';
 let contentProtectionEnabled = false;
 let trayOnlyMode = false;
@@ -466,21 +468,16 @@ function createMainWindow(sessionState: AppSession): BrowserWindow {
   return win;
 }
 
-// 控制窗口鼠标穿透。
-// - 置顶 + clickThroughEnabled 开启时,鼠标事件完全穿透到下方应用
-// - forceDisable=true 临时关掉穿透(用于鼠标进入标题栏区域时让按钮可点击)
-// 之所以需要 forceDisable: setIgnoreMouseEvents 是窗口级的,无法按区域控制,
-// 只能动态切换整个窗口的穿透状态。
-//
-// forward: false 的含义: 鼠标事件完全不转发给 webContents,
-// 网页收不到 mousemove/click,自然不会触发任何 hover 交互或点击。
-// 之前用 forward: true 会让网页继续接收 mousemove 触发 hover,不符合
-// "点击穿透"的预期(用户期望穿透模式下网页完全不响应)。
-// 副作用: renderer 的 DOM mousemove 也收不到,标题栏 hover 检测必须靠
-// 主进程屏幕坐标轮询(installTitlebarHoverTracking 已实现)。
-function applyClickThrough(win = mainWindow, forceDisable = false): void {
+// 控制窗口交互状态（v1.1.1，见 TESTING.md 的 T-04 决策）。
+// - 默认 clickThroughEnabled=false：置顶只是置顶，窗口始终完全可交互。
+// - 开启「鼠标移出窗口时自动穿透」后：光标在窗口矩形内 -> 完全可交互；
+//   移出窗口 -> setIgnoreMouseEvents(true)，事件落到下层应用。
+// 判定由主进程屏幕坐标轮询完成：网页由独立 WebContentsView 承载，渲染层 DOM
+// 拿不到网页区域的鼠标命中信息，forward:true 无法可靠覆盖 WebContentsView。
+// forward:false 表示穿透时鼠标事件不转发给 webContents，窗口彻底不阻挡下层。
+function applyClickThrough(win = mainWindow): void {
   if (!win || win.isDestroyed()) return;
-  const shouldIgnore = win.isAlwaysOnTop() && clickThroughEnabled && !forceDisable;
+  const shouldIgnore = win.isAlwaysOnTop() && clickThroughEnabled && !cursorInsideWindow;
   win.setIgnoreMouseEvents(shouldIgnore, { forward: false });
 }
 
@@ -516,38 +513,77 @@ function installWindowSessionTracking(win: BrowserWindow): void {
 function installTitlebarHoverTracking(win: BrowserWindow): void {
   let lastVisible: boolean | null = null;
   let timer: NodeJS.Timeout | null = null;
+  let leaveTimer: NodeJS.Timeout | null = null;
+
+  // 切换「光标在窗口内 / 外」状态。进入立即恢复交互；移出延迟 120ms 并二次确认，
+  // 避免拖动窗口穿越边界时反复切换穿透状态。
+  const setCursorInside = (inside: boolean): void => {
+    if (leaveTimer) {
+      clearTimeout(leaveTimer);
+      leaveTimer = null;
+    }
+    if (inside) {
+      if (!cursorInsideWindow) {
+        cursorInsideWindow = true;
+        applyClickThrough(win);
+      }
+      return;
+    }
+    leaveTimer = setTimeout(() => {
+      leaveTimer = null;
+      if (win.isDestroyed() || !cursorInsideWindow) return;
+      const b = win.getBounds();
+      const c = screen.getCursorScreenPoint();
+      const stillOutside =
+        c.x < b.x || c.x >= b.x + b.width || c.y < b.y || c.y >= b.y + b.height;
+      if (!stillOutside) return;
+      cursorInsideWindow = false;
+      applyClickThrough(win);
+    }, 120);
+  };
 
   const update = (): void => {
     if (win.isDestroyed()) return;
 
     const bounds = win.getBounds();
     const cursor = screen.getCursorScreenPoint();
-    const visible =
+    const insideWindow =
       cursor.x >= bounds.x &&
       cursor.x < bounds.x + bounds.width &&
       cursor.y >= bounds.y &&
-      cursor.y < bounds.y + TITLEBAR_HEIGHT;
+      cursor.y < bounds.y + bounds.height;
+    const visible = insideWindow && cursor.y < bounds.y + TITLEBAR_HEIGHT;
 
-    if (visible === lastVisible) return;
-    lastVisible = visible;
-    win.webContents.send('titlebar-visibility', visible);
-    // 鼠标进入标题栏区域时,临时关掉窗口穿透,让标题栏按钮和拖动区可交互;
-    // 离开时恢复穿透状态。这样置顶+穿透模式下标题栏依然可用。
-    applyClickThrough(win, visible);
+    if (visible !== lastVisible) {
+      lastVisible = visible;
+      win.webContents.send('titlebar-visibility', visible);
+    }
+
+    // 自动穿透模式下按整个窗口矩形切换；其它情况保证窗口始终可交互。
+    if (win.isAlwaysOnTop() && clickThroughEnabled) {
+      setCursorInside(insideWindow);
+    } else if (!cursorInsideWindow) {
+      cursorInsideWindow = true;
+      applyClickThrough(win);
+    }
   };
 
   const start = (): void => {
     if (timer) return;
-    timer = setInterval(update, 80);
+    timer = setInterval(update, 40);
   };
   const stop = (): void => {
+    if (leaveTimer) {
+      clearTimeout(leaveTimer);
+      leaveTimer = null;
+    }
     if (!timer) return;
     clearInterval(timer);
     timer = null;
     // 停止时把标题栏隐藏,避免残留
     if (!win.isDestroyed()) win.webContents.send('titlebar-visibility', false);
     lastVisible = null;
-    // 恢复窗口穿透状态(非置顶模式下 applyClickThrough 会关掉穿透)
+    cursorInsideWindow = true;
     applyClickThrough(win);
   };
 
@@ -1060,13 +1096,14 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
         click: () => win.webContents.send('menu-action', 'ontop_toggle')
       },
       {
-        label: '置顶时点击穿透',
+        label: '鼠标移出窗口时自动穿透',
         type: 'checkbox',
         enabled: win.isAlwaysOnTop(),
         checked: clickThroughEnabled,
         click: (menuItem) => {
           clickThroughEnabled = menuItem.checked;
           sessionStore?.update({ clickThrough: clickThroughEnabled });
+          cursorInsideWindow = true;
           applyClickThrough(win);
         }
       },
@@ -1253,6 +1290,7 @@ function registerIpc(bookmarks: BookmarkStore, passwords: PasswordStore): void {
   ipcMain.handle('set-always-on-top', (_e, onTop: boolean) => {
     mainWindow?.setAlwaysOnTop(onTop, onTop ? 'floating' : 'normal');
     sessionStore?.update({ alwaysOnTop: onTop === true });
+    cursorInsideWindow = true;
     applyClickThrough();
     refreshApplicationMenu();
     return onTop;

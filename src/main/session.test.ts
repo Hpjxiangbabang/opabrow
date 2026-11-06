@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { AppSession } from './session';
 import { sanitizeSession, sanitizeSessionPatch } from './session';
 
 describe('session sanitization', () => {
@@ -61,6 +62,13 @@ describe('session sanitization', () => {
     expect(sanitizeSession({}).trayOnlyMode).toBe(false);
     expect(sanitizeSessionPatch({ trayOnlyMode: true })).toEqual({ trayOnlyMode: true });
     expect(sanitizeSessionPatch({ trayOnlyMode: 'yes' })).toEqual({});
+  });
+
+  it('defaults click-through to off (v1.1.1)', () => {
+    expect(sanitizeSession({}).clickThrough).toBe(false);
+    expect(sanitizeSession({ clickThrough: true }).clickThrough).toBe(true);
+    expect(sanitizeSession({ clickThrough: 'yes' } as unknown as Partial<AppSession>).clickThrough).toBe(false);
+    expect(sanitizeSessionPatch({ clickThrough: true })).toEqual({ clickThrough: true });
   });
 
   it('rejects unsafe renderer patches', () => {

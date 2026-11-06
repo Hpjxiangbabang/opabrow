@@ -662,8 +662,9 @@ body {
   display: flex;
   align-items: center;
   padding: 0 12px;
-  background: rgba(246, 248, 251, 0.88);
-  border-bottom: 1px solid rgba(86, 101, 119, 0.14);
+  background: color-mix(in srgb, var(--ui-bg) 88%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-fg) 14%, transparent);
+  color: var(--ui-fg);
   opacity: 0;
   pointer-events: auto;
   -webkit-app-region: drag;
@@ -688,7 +689,7 @@ body {
   width: 14px;
   height: 14px;
   padding: 0;
-  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  border: 0.5px solid color-mix(in srgb, var(--ui-fg) 16%, transparent);
   border-radius: 50%;
   place-items: center;
   cursor: pointer;
@@ -740,14 +741,14 @@ body {
   border-radius: 6px;
   place-items: center;
   background: transparent;
-  color: rgba(74, 88, 105, 0.72);
+  color: color-mix(in srgb, var(--ui-fg) 70%, transparent);
   cursor: pointer;
   -webkit-app-region: no-drag;
 }
 
 .titlebar-icon-button:hover {
-  background: rgba(87, 102, 122, 0.1);
-  color: #405269;
+  background: color-mix(in srgb, var(--ui-fg) 10%, transparent);
+  color: var(--ui-fg);
 }
 
 .titlebar-icon-button.active {
@@ -778,7 +779,7 @@ body {
   height: 20px;
   margin: 0 4px;
   border-radius: 2px;
-  background: rgba(120, 130, 145, 0.25);
+  background: color-mix(in srgb, var(--ui-fg) 22%, transparent);
   cursor: col-resize;
   -webkit-app-region: no-drag;
   transition: background 0.15s ease;
@@ -797,7 +798,7 @@ body {
   overflow: hidden;
   border: 0;
   background: transparent;
-  color: #354052;
+  color: var(--ui-fg);
   cursor: text;
   font-family: inherit;
   font-size: 12px;
@@ -809,7 +810,8 @@ body {
 }
 
 .titlebar-address-preview:hover {
-  color: #1f2c3d;
+  color: var(--ui-fg);
+  opacity: 0.82;
 }
 
 .titlebar-address-input {
@@ -817,11 +819,11 @@ body {
   width: 100%;
   height: 25px;
   padding: 0 10px;
-  border: 1px solid transparent;
+  border: 1px solid color-mix(in srgb, var(--ui-fg) 14%, transparent);
   border-radius: 6px;
   outline: none;
-  background: transparent;
-  color: #354052;
+  background: color-mix(in srgb, var(--ui-fg) 6%, transparent);
+  color: var(--ui-fg);
   font-family: inherit;
   font-size: 12px;
   line-height: 25px;
@@ -830,12 +832,12 @@ body {
 
 .titlebar-address-input:focus {
   border-color: rgba(0, 122, 255, 0.72);
-  background: color-mix(in srgb, var(--ui-fg) 96%, transparent);
+  background: var(--ui-bg);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.14);
 }
 
 .titlebar-address-input::placeholder {
-  color: color-mix(in srgb, var(--ui-bg) 50%, transparent);
+  color: color-mix(in srgb, var(--ui-fg) 48%, transparent);
 }
 
 .address-suggestions {
@@ -845,9 +847,10 @@ body {
   z-index: 1;
   width: 100%;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.13);
+  border: 1px solid color-mix(in srgb, var(--ui-fg) 14%, transparent);
   border-radius: 5px;
-  background: color-mix(in srgb, var(--ui-fg) 98%, transparent);
+  background: color-mix(in srgb, var(--ui-bg) 98%, transparent);
+  color: var(--ui-fg);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   -webkit-app-region: no-drag;
 }
@@ -861,9 +864,9 @@ body {
   padding: 0 9px;
   overflow: hidden;
   border: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-fg) 8%, transparent);
   background: transparent;
-  color: #313136;
+  color: var(--ui-fg);
   cursor: pointer;
   font-family: inherit;
   font-size: 12px;
@@ -881,13 +884,13 @@ body {
 
 .address-suggestion-title {
   flex: 0 1 52%;
-  color: #30343a;
+  color: var(--ui-fg);
   font-weight: 500;
 }
 
 .address-suggestion-url {
   flex: 1 1 48%;
-  color: #8a6b5c;
+  color: color-mix(in srgb, var(--ui-fg) 62%, transparent);
   font-size: 11px;
 }
 
@@ -908,7 +911,7 @@ body {
   min-width: 112px;
   max-width: 220px;
   margin-left: 22px;
-  color: #5d6a7a;
+  color: var(--ui-fg);
   -webkit-app-region: no-drag;
 }
 
@@ -917,6 +920,7 @@ body {
   min-width: 0;
   height: 4px;
   appearance: none;
+  background: color-mix(in srgb, var(--ui-fg) 20%, transparent);
   border-radius: 999px;
   cursor: pointer;
   outline: none;
@@ -934,7 +938,7 @@ body {
 
 .titlebar-opacity output {
   width: 31px;
-  color: #657386;
+  color: var(--ui-fg);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -970,4 +974,25 @@ body {
   height: 100%;
   min-width: 0;
   min-height: 0;
+}
+
+/* ---------- T-02: 平台化标题栏布局 ---------- */
+/* macOS 交通灯按钮靠左（默认顺序）；Windows / Linux 控制按钮靠右，
+   并反转组内顺序，使「关闭」位于最右侧，符合各平台习惯。 */
+.titlebar[data-platform='win32'] .traffic-buttons,
+.titlebar[data-platform='linux'] .traffic-buttons {
+  order: 10;
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.titlebar[data-platform='win32'] .titlebar-address,
+.titlebar[data-platform='linux'] .titlebar-address {
+  margin-left: 0;
+  margin-right: 12px;
+}
+
+.titlebar[data-platform='win32'] .titlebar-opacity,
+.titlebar[data-platform='linux'] .titlebar-opacity {
+  margin-left: 0;
 }
