@@ -38,10 +38,16 @@ FunctionEnd
 ; 卸载清理：仅在检测到本应用写入的归属标记时删除数据目录，避免误删同名目录。
 ; 注意：通过 FLOATPANE_DATA_DIR 显式指定的自定义目录由用户自行管理，卸载脚本不触碰。
 !macro customUnInstall
+  ; 升级安装会先调用旧卸载器；此时绝不能删除用户数据，否则升级即丢设置。
+  ; ${isUpdated} 由 electron-builder 提供，在卸载器展开本宏时 LogicLib 已加载。
+  ${If} ${isUpdated}
+    Goto FloatPaneSkipDataCleanup
+  ${EndIf}
   IfFileExists "$INSTDIR\FloatPane-data\.floatpane-data" 0 +2
     RMDir /r "$INSTDIR\FloatPane-data"
   IfFileExists "$APPDATA\FloatPane-data\.floatpane-data" 0 +2
     RMDir /r "$APPDATA\FloatPane-data"
+  FloatPaneSkipDataCleanup:
   ; 卸载完成后尝试移除空的产品目录（非空则保留用户文件，不使用 /r）。
   RMDir "$INSTDIR"
 !macroend

@@ -1,7 +1,15 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { HistoryEntry, sanitizeHistoryEntries } from './history';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
+
+export type TabEntry = {
+  id: string;
+  url: string | null;
+  title: string;
+};
 
 export type DownloadState = 'progressing' | 'completed' | 'failed';
 
@@ -35,6 +43,11 @@ export type AppSession = {
   theme: ThemeMode;
   contentProtection: boolean;
   trayOnlyMode: boolean;
+  homeUrl: string | null;
+  history: HistoryEntry[];
+  tabs: TabEntry[];
+  activeTabId: string | null;
+  confirmOnQuit: boolean;
 };
 
 const DEFAULT_SESSION: AppSession = {
@@ -48,9 +61,15 @@ const DEFAULT_SESSION: AppSession = {
   downloads: [],
   theme: 'light',
   contentProtection: false,
-  trayOnlyMode: false
+  trayOnlyMode: false,
+  homeUrl: null,
+  history: [],
+  tabs: [],
+  activeTabId: null,
+  confirmOnQuit: true
 };
 const DOWNLOAD_LIMIT = 30;
+const TAB_LIMIT = 20;
 
 function isHttpUrl(value: unknown): value is string {
   if (typeof value !== 'string') return false;
@@ -119,6 +138,27 @@ function isThemeMode(value: unknown): value is ThemeMode {
   return value === 'light' || value === 'dark' || value === 'system';
 }
 
+export function sanitizeTabs(value: unknown): TabEntry[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const tabs: TabEntry[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+    const tab = item as Partial<TabEntry>;
+    if (typeof tab.id !== 'string' || !tab.id || seen.has(tab.id)) continue;
+    seen.add(tab.id);
+    tabs.push({
+      id: tab.id.slice(0, 64),
+      url: isHttpUrl(tab.url) ? (tab.url as string) : null,
+      title: typeof tab.title === 'string' && tab.title.trim()
+        ? tab.title.trim().slice(0, 200)
+        : '新标签页'
+    });
+    if (tabs.length === TAB_LIMIT) break;
+  }
+  return tabs;
+}
+
 export function sanitizeSession(value: unknown): AppSession {
   if (!value || typeof value !== 'object') return { ...DEFAULT_SESSION };
   const session = value as Partial<AppSession>;
@@ -139,7 +179,12 @@ export function sanitizeSession(value: unknown): AppSession {
     ),
     theme: isThemeMode(session.theme) ? session.theme : DEFAULT_SESSION.theme,
     contentProtection: session.contentProtection === true,
-    trayOnlyMode: session.trayOnlyMode === true
+    trayOnlyMode: session.trayOnlyMode === true,
+    homeUrl: isHttpUrl(session.homeUrl) ? session.homeUrl : null,
+    history: sanitizeHistoryEntries(session.history),
+    tabs: sanitizeTabs(session.tabs),
+    activeTabId: typeof session.activeTabId === 'string' ? session.activeTabId : null,
+    confirmOnQuit: session.confirmOnQuit !== false
   };
 }
 
@@ -156,12 +201,18 @@ export function sanitizeSessionPatch(value: unknown): Partial<AppSession> {
   if (isThemeMode(patch.theme)) next.theme = patch.theme;
   if (typeof patch.contentProtection === 'boolean') next.contentProtection = patch.contentProtection;
   if (typeof patch.trayOnlyMode === 'boolean') next.trayOnlyMode = patch.trayOnlyMode;
+  if (patch.homeUrl === null || isHttpUrl(patch.homeUrl)) next.homeUrl = patch.homeUrl;
+  if (Array.isArray(patch.history)) next.history = sanitizeHistoryEntries(patch.history);
+  if (Array.isArray(patch.tabs)) next.tabs = sanitizeTabs(patch.tabs);
+  if (patch.activeTabId === null || typeof patch.activeTabId === 'string') next.activeTabId = patch.activeTabId;
+  if (typeof patch.confirmOnQuit === 'boolean') next.confirmOnQuit = patch.confirmOnQuit;
   return next;
 }
 
 export class SessionStore {
   private data: AppSession = { ...DEFAULT_SESSION };
-  private writeTimer: NodeJS.Timeout | null = null;
+  // v1.1.2: 取消 250ms 防抖。防抖 + 退出时未等待 flush 是「设置未保存」的直接原因。
+  // 写入按队列串行执行，不会乱序；调用频率本身就很低（设置变更、窗口移动 200ms 防抖）。
   private writePromise: Promise<void> = Promise.resolve();
 
   constructor(private readonly filePath: string) {}
@@ -180,24 +231,21 @@ export class SessionStore {
 
   update(patch: Partial<AppSession>): void {
     this.data = sanitizeSession({ ...this.data, ...patch });
-    this.scheduleWrite();
+    this.queueWrite();
   }
 
   async flush(): Promise<void> {
-    if (this.writeTimer) {
-      clearTimeout(this.writeTimer);
-      this.writeTimer = null;
-      this.queueWrite();
-    }
     await this.writePromise;
   }
 
-  private scheduleWrite(): void {
-    if (this.writeTimer) clearTimeout(this.writeTimer);
-    this.writeTimer = setTimeout(() => {
-      this.writeTimer = null;
-      this.queueWrite();
-    }, 250);
+  // 退出钩子必须是同步的：Electron 不会等待异步 Promise 就结束进程。
+  flushSync(): void {
+    try {
+      mkdirSync(dirname(this.filePath), { recursive: true });
+      writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf8');
+    } catch (error) {
+      console.warn('[FloatPane] synchronous session flush failed:', error);
+    }
   }
 
   private queueWrite(): void {

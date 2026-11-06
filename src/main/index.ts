@@ -12,7 +12,7 @@ import {
 } from './bookmarks';
 import { PasswordStore } from './passwords';
 import { HistoryEntry, sanitizeHistoryEntries } from './history';
-import { AppSession, DownloadEntry, SessionStore, ThemeMode, sanitizeSessionPatch } from './session';
+import { AppSession, DownloadEntry, SessionStore, TabEntry, ThemeMode, sanitizeSessionPatch } from './session';
 import { registerUpdaterIpc, startAutoUpdateCheck, stopAutoUpdateCheck } from './updater';
 // 副作用模块：必须在 app.whenReady() 之前重定向所有数据路径
 import { dataLocation } from './dataPaths';
@@ -112,6 +112,35 @@ function applyTrayOnlyMode(enabled: boolean, persist = true): void {
   }
   if (persist) sessionStore?.update({ trayOnlyMode: enabled });
   refreshApplicationMenu();
+}
+
+// v1.1.2：托盘一级「退出」的防误触。
+// 调研结论（TrayMenu 设计指南、Electron 官方 Tray 示例、主流桌面应用）：
+//   Quit 应放在一级菜单最底部并用分隔线隔离；高频操作放顶部；
+//   仅对破坏性操作加确认。右键菜单在光标位置展开，第一项恰恰最容易被误触，
+//   因此不采用「放最顶上」的兜底方案。
+// 实现：底部 + 分隔线 + 确认框（默认焦点在「取消」）+ 「不再提示」可关闭确认。
+async function requestQuit(): Promise<void> {
+  const shouldConfirm = sessionStore?.getSnapshot().confirmOnQuit !== false;
+  if (shouldConfirm) {
+    const answer = await dialog.showMessageBox({
+      type: 'question',
+      title: '退出 FloatPane',
+      message: '确定要退出 FloatPane 吗？',
+      detail: '退出后窗口与托盘图标都会关闭，所有标签页将关闭。',
+      buttons: ['取消', '退出'],
+      defaultId: 0,
+      cancelId: 0,
+      checkboxLabel: '以后直接退出，不再提示',
+      checkboxChecked: false,
+      noLink: true
+    });
+    if (answer.response !== 1) return;
+    if (answer.checkboxChecked) sessionStore?.update({ confirmOnQuit: false });
+  }
+  isAppQuitting = true;
+  sessionStore?.flushSync();
+  app.quit();
 }
 
 async function clearBrowsingData(win: BrowserWindow): Promise<void> {
@@ -319,12 +348,166 @@ function createWebContentView(initialUrl: string): WebContentsView {
   return view;
 }
 
-function attachWebContentView(win: BrowserWindow, initialUrl: string): void {
-  if (webContentView) return;
-  webContentView = createWebContentView(initialUrl);
-  win.contentView.addChildView(webContentView);
+// ---------- 多标签页（v1.1.2） ----------
+// 设计：webContentView 始终指向当前活动视图，因此所有既有的
+// webContentView.webContents.xxx() 调用自动作用于当前标签，无需逐一改造。
+// 本应用是透明浮层窗口，不引入可见标签栏；标签通过「标签」菜单管理。
+type TabState = { id: string; url: string | null; title: string; view: WebContentsView };
+
+const tabViews = new Map<string, TabState>();
+let activeTabId: string | null = null;
+let attachedViewId: string | null = null;
+
+const NEW_TAB_URL = 'about:blank';
+
+function listTabs(): TabEntry[] {
+  return [...tabViews.values()].map((tab) => ({
+    id: tab.id,
+    url: tab.url,
+    title: tab.title
+  }));
+}
+
+function persistTabs(): void {
+  sessionStore?.update({ tabs: listTabs(), activeTabId });
+}
+
+function broadcastTabs(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('tabs-changed', {
+    tabs: listTabs(),
+    activeTabId,
+    currentUrl: webContentView?.webContents.getURL() ?? ''
+  });
+}
+
+function tabMenuLabel(tab: TabState, index: number): string {
+  let title = tab.title?.trim() || '';
+  if (!title && tab.url) {
+    try {
+      title = new URL(tab.url).hostname;
+    } catch {
+      title = tab.url;
+    }
+  }
+  if (!title) title = '新标签页';
+  if (title.length > 42) title = `${title.slice(0, 42)}…`;
+  return `${index + 1}. ${title}`;
+}
+
+function switchTab(id: string): void {
+  const win = mainWindow;
+  const next = tabViews.get(id);
+  if (!win || win.isDestroyed() || !next) return;
+
+  if (attachedViewId && attachedViewId !== id) {
+    const previous = tabViews.get(attachedViewId);
+    if (previous) {
+      try {
+        win.contentView.removeChildView(previous.view);
+      } catch {
+        // 视图可能已随窗口销毁，忽略。
+      }
+    }
+  }
+  if (attachedViewId !== id) {
+    win.contentView.addChildView(next.view);
+    attachedViewId = id;
+  }
+
+  webContentView = next.view;
+  activeTabId = id;
   syncWebContentBounds();
   void applyWebColorScheme(themeMode);
+  void applyClickThrough(win);
+  broadcastTabs();
+  persistTabs();
+  refreshApplicationMenu();
+}
+
+function newTab(url: string | null, activate = true, title?: string): string {
+  const id = randomUUID();
+  const view = createWebContentView(url ?? NEW_TAB_URL);
+  const tab: TabState = {
+    id,
+    url,
+    title: title?.trim() || (url ? (() => {
+      try {
+        return new URL(url).hostname;
+      } catch {
+        return '新标签页';
+      }
+    })() : '新标签页'),
+    view
+  };
+  tabViews.set(id, tab);
+
+  view.webContents.on('page-title-updated', (_event, pageTitle) => {
+    tab.title = pageTitle?.trim() || tab.title;
+    const current = view.webContents.getURL();
+    if (current && current !== NEW_TAB_URL) tab.url = current;
+    persistTabs();
+    refreshApplicationMenu();
+  });
+  view.webContents.on('did-navigate', (_event, navigatedUrl) => {
+    if (navigatedUrl && navigatedUrl !== NEW_TAB_URL) tab.url = navigatedUrl;
+    persistTabs();
+    refreshApplicationMenu();
+  });
+
+  if (activate) switchTab(id);
+  else persistTabs();
+  return id;
+}
+
+function closeTab(id: string): void {
+  const tab = tabViews.get(id);
+  if (!tab) return;
+  const ids = [...tabViews.keys()];
+  const index = ids.indexOf(id);
+
+  if (attachedViewId === id && mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.contentView.removeChildView(tab.view);
+    } catch {
+      // ignore
+    }
+    attachedViewId = null;
+    webContentView = null;
+  }
+  try {
+    tab.view.webContents.close();
+  } catch {
+    // ignore
+  }
+  tabViews.delete(id);
+
+  const remaining = [...tabViews.keys()];
+  if (remaining.length === 0) {
+    const home = sessionStore?.getSnapshot().homeUrl ?? null;
+    newTab(home, true);
+  } else {
+    const nextId = remaining[Math.min(index, remaining.length - 1)];
+    switchTab(nextId);
+  }
+  refreshApplicationMenu();
+}
+
+function attachWebContentView(
+  win: BrowserWindow,
+  initialUrl: string,
+  savedTabs: TabEntry[] = [],
+  savedActiveId: string | null = null
+): void {
+  if (webContentView) return;
+  const initial = savedTabs.length
+    ? savedTabs.map((tab) => ({ url: tab.url, title: tab.title }))
+    : [{ url: initialUrl || null, title: '' }];
+  for (const item of initial) newTab(item.url, false, item.title);
+  const firstId = savedActiveId && tabViews.has(savedActiveId)
+    ? savedActiveId
+    : [...tabViews.keys()][0];
+  if (firstId) switchTab(firstId);
   // 窗口尺寸变化时同步 view bounds
   win.on('resize', () => syncWebContentBounds());
 }
@@ -1066,9 +1249,9 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
           { label: '清除缓存与 Cookies…', click: () => void clearBrowsingData(win) },
           { type: 'separator' },
           {
-            label: dataLocation.source === 'portable'
-              ? '模式：跟随安装目录（卸载自动清除）'
-              : `模式：${dataLocation.source}（卸载脚本清理）`,
+            label: dataLocation.source === 'env'
+              ? '模式：自定义目录（FLOATPANE_DATA_DIR）'
+              : '模式：固定用户数据目录（升级不丢失，卸载清理）',
             enabled: false
           }
         ]
@@ -1188,18 +1371,61 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
         }
       },
       { type: 'separator' },
-      { role: 'minimize', label: '最小化' },
+      { role: 'minimize', label: '最小化' }
+    ]
+  };
+
+  // v1.1.2「标签」一级菜单：列出已打开标签（radio 可切换）、分隔线、新建标签页。
+  // 本应用是透明浮层窗口，不引入可见标签栏，标签完全由菜单管理。
+  // 注：浏览器惯例的 Ctrl+T / Ctrl+W 已被「切换置顶」「关闭窗口」占用，
+  // 因此新建/关闭标签使用 Ctrl+Shift+T / Ctrl+Shift+W，避免破坏既有习惯。
+  const tabList = [...tabViews.values()];
+  const tabsMenu: MenuItemConstructorOptions = {
+    label: '标签',
+    submenu: [
+      ...tabList.map((tab, index) => ({
+        label: tabMenuLabel(tab, index),
+        type: 'radio' as const,
+        checked: tab.id === activeTabId,
+        click: () => switchTab(tab.id)
+      })),
       { type: 'separator' },
       {
-        label: '退出 FloatPane',
-        click: () => app.quit()
+        label: '新建标签页',
+        accelerator: 'CmdOrCtrl+Shift+T',
+        click: () => newTab(sessionStore?.getSnapshot().homeUrl ?? null)
+      },
+      {
+        label: '关闭当前标签页',
+        accelerator: 'CmdOrCtrl+Shift+W',
+        enabled: tabList.length > 0,
+        click: () => { if (activeTabId) closeTab(activeTabId); }
       }
     ]
   };
 
+  // 托盘右键一级：防截屏开关（与视图菜单共享状态）+ 退出。
+  // 退出位于最底部并用分隔线隔离，降低误触概率。
+  const trayQuickActions: MenuItemConstructorOptions[] = isMac
+    ? []
+    : [
+        { type: 'separator' },
+        {
+          label: '防止被截图 / 录屏 / 共享屏幕捕获',
+          type: 'checkbox',
+          checked: contentProtectionEnabled,
+          click: (menuItem) => applyContentProtection(menuItem.checked)
+        },
+        { type: 'separator' },
+        {
+          label: '退出 FloatPane',
+          click: () => void requestQuit()
+        }
+      ];
+
   const template: MenuItemConstructorOptions[] = isMac
-    ? [appMenu, editMenu, browseMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, windowMenu]
-    : [editMenu, browseMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, trayWindowMenu];
+    ? [appMenu, editMenu, browseMenu, tabsMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, windowMenu]
+    : [editMenu, browseMenu, tabsMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, trayWindowMenu, ...trayQuickActions];
 
   return Menu.buildFromTemplate(template);
 }
@@ -1276,6 +1502,21 @@ function registerIpc(bookmarks: BookmarkStore, passwords: PasswordStore): void {
     if (event.sender.id !== mainWindow?.webContents.id) return;
     if (typeof enabled === 'boolean') applyTrayOnlyMode(enabled);
   });
+  ipcMain.handle('tabs:new', (event, url: unknown) => {
+    if (event.sender.id !== mainWindow?.webContents.id) return null;
+    return newTab(typeof url === 'string' && url ? url : null);
+  });
+  ipcMain.handle('tabs:close', (event, id: unknown) => {
+    if (event.sender.id !== mainWindow?.webContents.id) return false;
+    if (typeof id === 'string') closeTab(id);
+    return true;
+  });
+  ipcMain.handle('tabs:switch', (event, id: unknown) => {
+    if (event.sender.id !== mainWindow?.webContents.id) return false;
+    if (typeof id === 'string') switchTab(id);
+    return true;
+  });
+  ipcMain.handle('tabs:list', () => ({ tabs: listTabs(), activeTabId }));
   ipcHandlersRegistered = true;
 
   // 设置窗口透明度 0.1 - 1.0
@@ -1507,7 +1748,7 @@ app.whenReady().then(async () => {
 
   mainWindow = createMainWindow(sessionState);
   // 初始 URL 从 session 读取,由 renderer 通过 IPC 调用 loadURL 控制
-  attachWebContentView(mainWindow, sessionState.url ?? '');
+  attachWebContentView(mainWindow, sessionState.url ?? '', sessionState.tabs, sessionState.activeTabId);
   registerIpc(bookmarkStore, passwordStore);
 
   // 自动更新检测
@@ -1524,7 +1765,8 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createMainWindow(sessionStore?.getSnapshot() ?? sessionState);
-      attachWebContentView(mainWindow, sessionStore?.getSnapshot().url ?? '');
+      const snapshot = sessionStore?.getSnapshot() ?? sessionState;
+      attachWebContentView(mainWindow, snapshot.url ?? '', snapshot.tabs, snapshot.activeTabId);
       refreshApplicationMenu();
     }
   });
@@ -1532,6 +1774,8 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   isAppQuitting = true;
+  // 同步写入，确保退出前最后一次设置变更一定落盘。
+  sessionStore?.flushSync();
 });
 
 app.on('window-all-closed', () => {

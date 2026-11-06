@@ -1,6 +1,9 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AppSession } from './session';
-import { sanitizeSession, sanitizeSessionPatch } from './session';
+import { SessionStore, sanitizeSession, sanitizeSessionPatch, sanitizeTabs } from './session';
 
 describe('session sanitization', () => {
   it('keeps only safe browser state', () => {
@@ -69,6 +72,49 @@ describe('session sanitization', () => {
     expect(sanitizeSession({ clickThrough: true }).clickThrough).toBe(true);
     expect(sanitizeSession({ clickThrough: 'yes' } as unknown as Partial<AppSession>).clickThrough).toBe(false);
     expect(sanitizeSessionPatch({ clickThrough: true })).toEqual({ clickThrough: true });
+  });
+
+  it('persists browser state fields (v1.1.2)', () => {
+    const session = sanitizeSession({
+      homeUrl: 'https://example.org/',
+      history: [{ url: 'https://example.org/a', title: 'A', visitedAt: 1 }],
+      tabs: [{ id: 't1', url: 'https://example.org/a', title: 'A' }],
+      activeTabId: 't1',
+      confirmOnQuit: false
+    });
+    expect(session.homeUrl).toBe('https://example.org/');
+    expect(session.history).toHaveLength(1);
+    expect(session.tabs).toHaveLength(1);
+    expect(session.activeTabId).toBe('t1');
+    expect(session.confirmOnQuit).toBe(false);
+    expect(sanitizeSession({}).confirmOnQuit).toBe(true);
+    expect(sanitizeSession({ homeUrl: 'javascript:alert(1)' }).homeUrl).toBeNull();
+    expect(sanitizeTabs([{ id: '', url: 'x' }, { id: 'ok', url: null }])).toHaveLength(1);
+    expect(sanitizeSessionPatch({ homeUrl: 'https://a.test', history: [] })).toEqual({
+      homeUrl: 'https://a.test', history: []
+    });
+  });
+
+  it('persists settings immediately and flushes synchronously (v1.1.2)', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'floatpane-session-'));
+    const file = join(dir, 'session.json');
+    try {
+      const store = new SessionStore(file);
+      await store.load();
+      store.update({ theme: 'dark', homeUrl: 'https://example.org/' });
+      await store.flush();
+      const first = JSON.parse(readFileSync(file, 'utf8')) as AppSession;
+      expect(first.theme).toBe('dark');
+      expect(first.homeUrl).toBe('https://example.org/');
+
+      store.update({ confirmOnQuit: false });
+      store.flushSync();
+      const second = JSON.parse(readFileSync(file, 'utf8')) as AppSession;
+      expect(second.confirmOnQuit).toBe(false);
+      expect(second.theme).toBe('dark');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('rejects unsafe renderer patches', () => {

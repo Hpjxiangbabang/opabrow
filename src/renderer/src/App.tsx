@@ -261,6 +261,17 @@ function App() {
     };
   }, []);
 
+  // v1.1.2: 切换标签后同步地址栏显示当前标签的 URL。
+  useEffect(() => {
+    const off = window.opabrow.onTabsChanged((state) => {
+      if (state.currentUrl) {
+        setCurrentUrl(state.currentUrl);
+        setUrl(state.currentUrl);
+      }
+    });
+    return () => { off(); };
+  }, []);
+
   // 透明度变化 → main process
   useEffect(() => {
     if (!sessionReady) return;
@@ -290,6 +301,15 @@ function App() {
         setMobileMode(saved.mobileMode);
         if (typeof saved.bilibiliWebFullscreen === 'boolean') {
           setBilibiliWebFullscreen(saved.bilibiliWebFullscreen);
+        }
+        // v1.1.2: 主页与历史以主进程 session.json 为唯一数据源。
+        // 若会话里没有（旧版本用户），则沿用 localStorage 初值完成一次性迁移。
+        if (saved.homeUrl) {
+          setHomeUrl(saved.homeUrl);
+          homeUrlRef.current = saved.homeUrl;
+        }
+        if (Array.isArray(saved.history) && saved.history.length) {
+          setHistoryEntries(saved.history);
         }
       }
       setDownloads(storedDownloads);
@@ -323,9 +343,14 @@ function App() {
       void window.opabrow.syncHistory(historyEntries).catch((error) => {
         console.warn('history menu sync failed:', error);
       });
+      if (sessionReady) {
+        void window.opabrow.saveSession({ history: historyEntries }).catch((error) => {
+          console.warn('history persist failed:', error);
+        });
+      }
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [historyEntries]);
+  }, [historyEntries, sessionReady]);
 
   useEffect(() => {
     if (!showHistory) return;
@@ -352,7 +377,12 @@ function App() {
   useEffect(() => {
     homeUrlRef.current = homeUrl;
     localStorage.setItem(HOME_URL_STORAGE_KEY, homeUrl);
-  }, [homeUrl]);
+    if (sessionReady) {
+      void window.opabrow.saveSession({ homeUrl }).catch((error) => {
+        console.warn('home url persist failed:', error);
+      });
+    }
+  }, [homeUrl, sessionReady]);
 
   useEffect(() => {
     mobileModeRef.current = mobileMode;

@@ -3,6 +3,40 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有版本基于 MPL-2.0 继续开源，
 源码仓库：<https://github.com/Hpjxiangbabang/opabrow>。
 
+## [1.1.2] - 2026-11-06
+
+修复 v1.1.1 用户实测反馈。问题记录、调研与验收方式见 [TESTING.md](TESTING.md)。
+
+### 修复
+- **T-05 用户设置丢失（最严重）**：
+  - `SessionStore.update()` 取消 250ms 防抖，写入立即排队；新增 `flushSync()` 并在
+    `before-quit` 同步落盘（Electron 退出不等待异步 Promise）。
+  - 数据目录默认不再随安装目录走，改为固定 `appData/FloatPane-data`；启动时一次性迁移
+    旧便携目录数据；`FLOATPANE_DATA_DIR` 仍可指定到 D 盘。
+  - `customUnInstall` 检测 `${isUpdated}`，升级安装时旧卸载器跳过数据删除。
+  - 主页与历史迁入主进程 `session.json`（`homeUrl` / `history` 字段），localStorage
+    仅用于兼容与旧数据一次性迁移。
+- **T-06 托盘退出**：移到一级菜单最底部 + 分隔线隔离；点击弹确认框（默认「取消」，
+  可勾选「以后直接退出，不再提示」，状态持久化）。调研结论见 `TESTING.md`：
+  不采用「最顶上」兜底，因为右键菜单第一项最容易误触。
+- **T-07 托盘防截屏**：托盘一级新增「防止被截图 / 录屏 / 共享屏幕捕获」checkbox，
+  与「视图」菜单共享状态。技术边界：托盘图标/菜单由系统 Shell 渲染，
+  `setContentProtection` 无法保护托盘 UI 本身，这里提供的是开关入口。
+
+### 新增
+- **T-08 标签页**：新增「标签」一级菜单（与编辑/浏览/历史等同级）。二级菜单列出全部
+  已打开标签（radio 切换）、分隔线、新建标签页 / 关闭当前标签页。主进程用
+  `Map<id, WebContentsView>` 管理多视图，`webContentView` 始终指向活动视图；
+  标签列表与活动标签持久化，重启恢复；切换时广播 `tabs-changed` 同步地址栏。
+  不做可见标签栏，保持透明浮层窗口的极简定位。
+- 快捷键：`Ctrl+Shift+T` 新建标签、`Ctrl+Shift+W` 关闭当前标签
+  （`Ctrl+T` / `Ctrl+W` 已被置顶 / 关闭窗口占用，未改动既有习惯）。
+
+### 限制
+- 已通过 typecheck / 单测 / build / Windows 打包；**尚未做 GUI 交互实测**，
+  升级不丢数据、退出确认、标签切换均需按 `TESTING.md` 人工验收。
+- 首次启动恢复全部历史标签会同时加载多个页面，标签较多时启动略慢（上限 20）。
+
 ## [1.1.1] - 2026-11-06
 
 修复 v1.1.0 用户实测反馈的四个问题。问题记录、调研与验收标准见 [TESTING.md](TESTING.md)。
@@ -63,6 +97,7 @@
 
 上游 `ClaytonPetrosian/opabrow` 的零改动快照（提交 `4bab39e`）。功能与变更见上游仓库。
 
+[1.1.2]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.2
 [1.1.1]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.0
 [1.0.0]: https://github.com/ClaytonPetrosian/opabrow

@@ -3,6 +3,12 @@ import { clipboard, contextBridge, ipcRenderer } from 'electron';
 // 类型导出给 renderer
 export type ThemeMode = 'light' | 'dark' | 'system';
 
+export type TabsState = {
+  tabs: { id: string; url: string | null; title: string }[];
+  activeTabId: string | null;
+  currentUrl?: string;
+};
+
 export type MenuAction =
   | 'go_url'
   | 'reload'
@@ -67,6 +73,11 @@ export type SavedSession = {
   theme: ThemeMode;
   contentProtection: boolean;
   trayOnlyMode: boolean;
+  homeUrl?: string | null;
+  history?: { url: string; title: string; visitedAt: number }[];
+  tabs?: { id: string; url: string | null; title: string }[];
+  activeTabId?: string | null;
+  confirmOnQuit?: boolean;
 };
 
 export type UpdateCheckResult = {
@@ -207,6 +218,20 @@ const api = {
         ipcRenderer.removeListener('webview:did-finish-load', handler);
       };
     }
+  },
+
+  // ---------- 标签页 ----------
+  tabs: {
+    newTab: (url: string | null = null): Promise<string | null> =>
+      ipcRenderer.invoke('tabs:new', url),
+    closeTab: (id: string): Promise<boolean> => ipcRenderer.invoke('tabs:close', id),
+    switchTab: (id: string): Promise<boolean> => ipcRenderer.invoke('tabs:switch', id),
+    list: (): Promise<TabsState> => ipcRenderer.invoke('tabs:list')
+  },
+  onTabsChanged: (callback: (state: TabsState) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, state: TabsState): void => callback(state);
+    ipcRenderer.on('tabs-changed', handler);
+    return (): void => { ipcRenderer.removeListener('tabs-changed', handler); };
   },
 
   // ---------- 外观主题与屏幕捕获保护 ----------
