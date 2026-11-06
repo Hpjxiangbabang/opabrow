@@ -1,10 +1,16 @@
 name: Release
 
+# 发布闸门（实测后再发布）：
+# 推送 v*.*.* 标签只做版本标记，不触发任何构建或发布。
+# 只有人工在 Actions 页面手动运行本工作流、并填入已实测通过的标签名时，
+# 才会构建三平台产物并创建 GitHub Release，避免把未实测的版本公开发布。
 on:
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: '已实测、要发布的版本标签（例如 v1.1.1）'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -12,6 +18,8 @@ permissions:
 jobs:
   build:
     name: Build ${{ matrix.label }}
+    # 双保险：即使将来误加 push 触发器，也不会自动构建。
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -112,8 +120,20 @@ jobs:
   publish:
     name: Publish GitHub release
     needs: build
+    # 闸门核心：publish 只在人工 dispatch 时运行。
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify tag exists before publishing
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          git fetch --tags --force
+          git rev-parse --verify "refs/tags/$TAG" >/dev/null
+          echo "Publishing pre-verified tag: $TAG"
       - uses: actions/download-artifact@v4
         with:
           path: release-artifacts
@@ -125,7 +145,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" release-artifacts/* --clobber
