@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://claytonpetrosian.github.io/opabrow/sitemap.xml
+Sitemap: https://hpjxiangbabang.github.io/opabrow/sitemap.xml

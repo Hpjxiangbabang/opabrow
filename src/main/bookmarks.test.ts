@@ -27,7 +27,7 @@ describe('browser bookmark importers', () => {
               {
                 type: 'folder',
                 name: 'Work',
-                children: [{ type: 'url', name: 'opabrow', url: 'https://github.com/ClaytonPetrosian/opabrow' }]
+                children: [{ type: 'url', name: 'FloatPane', url: 'https://github.com/Hpjxiangbabang/opabrow' }]
               }
             ]
           }
@@ -39,7 +39,7 @@ describe('browser bookmark importers', () => {
     expect(imported.title).toBe('Default');
     expect(imported.children[0]).toMatchObject({ type: 'folder', title: 'Bookmarks bar' });
     expect(imported.children[0]).toMatchObject({
-      children: [{ type: 'folder', title: 'Work', children: [{ title: 'opabrow' }] }]
+      children: [{ type: 'folder', title: 'Work', children: [{ title: 'FloatPane' }] }]
     });
   });
 
@@ -92,7 +92,7 @@ describe('browser bookmark importers', () => {
   });
 
   it('merges repeated imports within the same folder without duplicating URLs', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'opabrow-bookmarks-'));
+    const directory = await mkdtemp(join(tmpdir(), 'FloatPane-bookmarks-'));
     temporaryDirectories.push(directory);
     const store = new BookmarkStore(join(directory, 'bookmarks.json'));
     const imported = parseHtmlBookmarks(`
@@ -113,7 +113,7 @@ describe('browser bookmark importers', () => {
   });
 
   it('persists imported empty folders', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'opabrow-bookmarks-'));
+    const directory = await mkdtemp(join(tmpdir(), 'FloatPane-bookmarks-'));
     temporaryDirectories.push(directory);
     const store = new BookmarkStore(join(directory, 'bookmarks.json'));
 

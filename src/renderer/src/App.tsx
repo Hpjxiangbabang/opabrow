@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { ChevronDown, ChevronUp, Clock3, Download, FolderOpen, Minus, Pin, Search, Trash2, X } from 'lucide-react';
 
-const DEFAULT_HOME_URL = 'https://github.com/ClaytonPetrosian/opabrow';
+const DEFAULT_HOME_URL = 'https://github.com/Hpjxiangbabang/opabrow';
 const DESKTOP_USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 opabrow/0.1';
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 FloatPane/0.1';
 const MOBILE_USER_AGENT =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 const HISTORY_STORAGE_KEY = 'opabrow.navigation-history.v2';
@@ -233,6 +233,21 @@ function App() {
     });
   };
 
+  // 主进程主题 / 防捕获状态变化 → 同步 UI 根节点属性
+  useEffect(() => {
+    document.documentElement.dataset.theme ||= 'light';
+    const offTheme = window.opabrow.onThemeChanged((theme) => {
+      document.documentElement.dataset.theme = theme;
+    });
+    const offProtection = window.opabrow.onContentProtectionChanged((enabled) => {
+      document.documentElement.dataset.captureProtected = String(enabled);
+    });
+    return () => {
+      offTheme();
+      offProtection();
+    };
+  }, []);
+
   // 透明度变化 → main process
   useEffect(() => {
     if (!sessionReady) return;
@@ -251,6 +266,8 @@ function App() {
     void Promise.all([window.opabrow.getSession(), window.opabrow.getDownloads()]).then(([saved, storedDownloads]) => {
       if (cancelled) return;
       if (saved) {
+        document.documentElement.dataset.theme = saved.theme;
+        document.documentElement.dataset.captureProtected = String(saved.contentProtection);
         if (saved.url) {
           setCurrentUrl(saved.url);
           setUrl(saved.url);

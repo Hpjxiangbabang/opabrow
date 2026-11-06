@@ -3,7 +3,7 @@ import * as https from 'node:https';
 import { SemVer, compare } from './semver';
 
 // ---------- 更新源配置 ----------
-// 支持两种托管平台,默认 GitLab,可切换 GitHub。
+// 支持两种托管平台,默认 GitHub,可切换 GitLab。
 // 配置写在 userData/update-source.json,用户可修改。
 
 export type UpdateProvider = 'gitlab' | 'github';
@@ -21,9 +21,9 @@ export type UpdateSourceConfig = {
 };
 
 export const DEFAULT_UPDATE_SOURCE: UpdateSourceConfig = {
-  provider: 'gitlab',
-  host: 'https://gitlab.com',
-  project: '',
+  provider: 'github',
+  host: 'https://api.github.com',
+  project: 'Hpjxiangbabang/opabrow',
   token: ''
 };
 
@@ -81,7 +81,7 @@ function httpsGetJson(url: string, headers: Record<string, string> = {}): Promis
       path: urlObj.pathname + urlObj.search,
       method: 'GET',
       headers: {
-        'User-Agent': `opabrow/${app.getVersion()}`,
+        'User-Agent': `FloatPane/${app.getVersion()}`,
         'Accept': 'application/json',
         ...headers
       },
@@ -236,7 +236,7 @@ export async function checkForUpdate(
     }
     return { available: false, reason: 'up-to-date' };
   } catch (error) {
-    console.warn('[opabrow] update check failed:', error);
+    console.warn('[FloatPane] update check failed:', error);
     return { available: false, reason: 'network-error' };
   }
 }
@@ -348,6 +348,6 @@ export function saveUpdateSourceConfig(config: UpdateSourceConfig): void {
     const configPath = join(app.getPath('userData'), CONFIG_FILENAME);
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
   } catch (error) {
-    console.warn('[opabrow] failed to save update source config:', error);
+    console.warn('[FloatPane] failed to save update source config:', error);
   }
 }

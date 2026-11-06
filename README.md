@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="./opabrow-icon.png" width="96" alt="opabrow icon" />
+  <img src="./floatpane-icon.png" width="96" alt="FloatPane icon" />
 </p>
 
-<h1 align="center">opabrow</h1>
+<h1 align="center">FloatPane</h1>
 
 <p align="center"><strong>The transparent floating browser for macOS, Windows and Linux.</strong></p>
 
@@ -11,15 +11,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ClaytonPetrosian/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 license" /></a>
+  <a href="https://github.com/Hpjxiangbabang/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 license" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="Cross-platform" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/version-1.0.0-2EA44F?style=flat-square" alt="v1.0.0" />
+  <img src="https://img.shields.io/badge/version-1.1.0-2EA44F?style=flat-square" alt="v1.1.0" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/ClaytonPetrosian/opabrow/releases/latest"><img src="https://img.shields.io/badge/download-latest%20release-3B82F6?style=for-the-badge" alt="Download" /></a>
-  <a href="https://claytonpetrosian.github.io/opabrow/"><img src="https://img.shields.io/badge/website-landing%20page-111827?style=for-the-badge" alt="Website" /></a>
+  <a href="https://github.com/Hpjxiangbabang/opabrow/releases/latest"><img src="https://img.shields.io/badge/download-latest%20release-3B82F6?style=for-the-badge" alt="Download" /></a>
+  <a href="https://hpjxiangbabang.github.io/opabrow/"><img src="https://img.shields.io/badge/website-landing%20page-111827?style=for-the-badge" alt="Website" /></a>
 </p>
 
 <p align="center">
@@ -27,12 +27,12 @@
 </p>
 
 <p align="center">
-  <img src="./site/assets/opabrow-demo.gif" width="800" alt="opabrow floating browser in action" />
+  <img src="./site/assets/opabrow-demo.gif" width="800" alt="FloatPane floating browser in action" />
 </p>
 
-## Why opabrow
+## Why FloatPane
 
-Most browser windows ask for a whole workspace. opabrow is the lightweight "fish-at-work" browser for the page you want nearby: a reference, a live dashboard, a playlist, a Bilibili video, or a small task that should remain accessible while you work elsewhere. It stays quietly on the edge of your desktop instead of taking it over.
+Most browser windows ask for a whole workspace. FloatPane is the lightweight "fish-at-work" browser for the page you want nearby: a reference, a live dashboard, a playlist, a Bilibili video, or a small task that should remain accessible while you work elsewhere. It stays quietly on the edge of your desktop instead of taking it over.
 
 The title bar stays transparent until the pointer reaches the top edge. It has its own 32px strip, so revealing the controls never covers or shifts the webpage below.
 
@@ -44,7 +44,7 @@ The title bar stays transparent until the pointer reaches the top edge. It has i
 
 ## Download
 
-[Download the latest release](https://github.com/ClaytonPetrosian/opabrow/releases/latest) for macOS, Windows or Linux. Each release includes installers for:
+[Download the latest release](https://github.com/Hpjxiangbabang/opabrow/releases/latest) for macOS, Windows or Linux. Each release includes installers for:
 
 - macOS Apple Silicon (`arm64`) and Intel (`x64`)
 - Windows x64 (`.exe` installer)
@@ -52,7 +52,7 @@ The title bar stays transparent until the pointer reaches the top edge. It has i
 
 ### macOS installation
 
-Starting with the next signed macOS release, packages are signed with a Developer ID and notarized by Apple. Open the downloaded DMG, drag **opabrow** to **Applications**, then launch it normally. No Terminal command is required.
+Starting with the next signed macOS release, packages are signed with a Developer ID and notarized by Apple. Open the downloaded DMG, drag **FloatPane** to **Applications**, then launch it normally. No Terminal command is required.
 
 The existing `v0.3.0` macOS assets predate this release pipeline and will be replaced by a signed release.
 
@@ -62,12 +62,12 @@ The existing `v0.3.0` macOS assets predate this release pipeline and will be rep
 
 - macOS
 - Node.js 22 or later
-- pnpm 9 or later
+- pnpm (version pinned by `packageManager` in package.json; corepack enables it automatically)
 
 ### Run locally
 
 ```bash
-git clone https://github.com/ClaytonPetrosian/opabrow.git
+git clone https://github.com/Hpjxiangbabang/opabrow.git
 cd opabrow
 pnpm install
 pnpm dev
@@ -86,33 +86,33 @@ pnpm build:mac
 
 Move the pointer to the top edge or press `Cmd+L`. When idle, the address is a compact, text-sized target, leaving the rest of the title bar free for dragging. Once focused, it expands for editing and accepts standard copy, cut and paste shortcuts.
 
-As you type, opabrow suggests up to five matching pages from the local navigation history. Suggestions place the page title first and the URL second; use the arrow keys to choose a result, then press `Enter`.
+As you type, FloatPane suggests up to five matching pages from the local navigation history. Suggestions place the page title first and the URL second; use the arrow keys to choose a result, then press `Enter`.
 
-Open **History > Show history** or press `Cmd+Shift+Y` to search, reopen, or clear recent pages. The **History** menu also keeps the ten most recent pages one click away. opabrow stores up to 100 history entries locally on this Mac; it has no account or cloud history sync.
+Open **History > Show history** or press `Cmd+Shift+Y` to search, reopen, or clear recent pages. The **History** menu also keeps the ten most recent pages one click away. FloatPane stores up to 100 history entries locally on this Mac; it has no account or cloud history sync.
 
-The default home page is the opabrow project repository. In the **Browse** menu, choose **Set current page as home** to make any visited page your local home page, or **Restore project home** to reset it.
+The default home page is the FloatPane project repository. In the **Browse** menu, choose **Set current page as home** to make any visited page your local home page, or **Restore project home** to reset it.
 
 ### Bilibili video pages
 
-Opening a Bilibili video or Bangumi playback page automatically switches the player to its web fullscreen mode. The video fills the available page area while staying inside the opabrow window.
+Opening a Bilibili video or Bangumi playback page automatically switches the player to its web fullscreen mode. The video fills the available page area while staying inside the FloatPane window.
 
 ### Find, restore, and download
 
 Press `Cmd+F` to search the current page. `Cmd+G` and `Cmd+Shift+G` move through matches without leaving the floating window.
 
-opabrow restores the latest page, window position and size, opacity, always-on-top setting, and mobile mode after relaunch. Downloads go to the standard Downloads folder. Open **Downloads** or press `Cmd+Shift+J` to follow progress, see failures, and reveal completed files in Finder. Recent download state stays local to this Mac.
+FloatPane restores the latest page, window position and size, opacity, always-on-top setting, and mobile mode after relaunch. Downloads go to the standard Downloads folder. Open **Downloads** or press `Cmd+Shift+J` to follow progress, see failures, and reveal completed files in Finder. Recent download state stays local to this Mac.
 
 When the window is always on top, click-through is enabled by default: pointer clicks and scrolling go to the application below. Turn it off from **View > Click through when always on top** whenever you need to interact with the floating page.
 
 ### Bookmarks and browser import
 
-The macOS **Bookmarks** menu keeps bookmarks out of the browsing surface. Press `Cmd+D` to add or remove the current page, then open nested folders directly from the menu. Import bookmarks from local Chrome or Safari profiles, or choose a standard exported HTML bookmark file. Bookmark data stays on this Mac in opabrow's application data folder.
+The macOS **Bookmarks** menu keeps bookmarks out of the browsing surface. Press `Cmd+D` to add or remove the current page, then open nested folders directly from the menu. Import bookmarks from local Chrome or Safari profiles, or choose a standard exported HTML bookmark file. Bookmark data stays on this Mac in FloatPane's application data folder.
 
 ### Password migration and fill
 
-Move saved logins from Chrome deliberately: export a password CSV from Chrome Password Manager, then choose **Passwords > Import Chrome password CSV…** in opabrow. The CSV is read only after you choose it and confirm the warning. Passwords are encrypted with the macOS Keychain before they are written to opabrow's local application data; opabrow never reads Chrome's internal password database, sends passwords to a server, or syncs them to a cloud service.
+Move saved logins from Chrome deliberately: export a password CSV from Chrome Password Manager, then choose **Passwords > Import Chrome password CSV…** in FloatPane. The CSV is read only after you choose it and confirm the warning. Passwords are encrypted with the macOS Keychain before they are written to FloatPane's local application data; FloatPane never reads Chrome's internal password database, sends passwords to a server, or syncs them to a cloud service.
 
-At a matching HTTPS origin, choose **Passwords > Fill current page** or press `Cmd+Shift+P`. opabrow never fills credentials automatically on page load. When several accounts match, it asks you to select an account first. The original exported CSV remains under your control, so remove it once you no longer need it.
+At a matching HTTPS origin, choose **Passwords > Fill current page** or press `Cmd+Shift+P`. FloatPane never fills credentials automatically on page load. When several accounts match, it asks you to select an account first. The original exported CSV remains under your control, so remove it once you no longer need it.
 
 ### Window controls that do not steal space
 
@@ -153,6 +153,24 @@ The free core focuses on a polished floating browsing experience. Future Pro exp
 
 Bug reports, design feedback and focused pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
+## Additions in this fork
+
+- **Choose install location**: the Windows installer now uses a multi-step wizard; macOS DMG and
+  Linux AppImage are portable by design.
+- **Explicit theme**: View / tray menu -> Appearance -> Light / Dark / System. Defaults to Light
+  instead of following the OS. The choice persists and is applied to both the app UI and web pages
+  via an emulated `prefers-color-scheme`.
+- **Screen-capture protection**: View / tray menu toggle backed by
+  `BrowserWindow.setContentProtection`. It cannot stop physical cameras, capture cards, or
+  privileged capture tools; Linux support is limited.
+
+- **Single data directory**: `userData`, session data, caches, cookies, temp files, crash dumps and logs
+  are all redirected to `FloatPane-data/` next to the executable, so they follow the chosen install
+  location and are removed by the uninstaller (`build/installer.nsh`). View / tray menu -> Data
+  management to open the folder or clear caches and cookies. Downloads stay in the OS Downloads folder.
+- **Tray-only mode**: hides the window from the taskbar; minimize and close become hide, and the window
+  is restored from the tray. The tray menu's Quit is the real exit. The setting persists.
+
 ## License
 
-opabrow is released under the [Mozilla Public License 2.0](LICENSE).
+FloatPane is released under the [Mozilla Public License 2.0](LICENSE).

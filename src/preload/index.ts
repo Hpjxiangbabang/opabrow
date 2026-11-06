@@ -1,6 +1,8 @@
 import { clipboard, contextBridge, ipcRenderer } from 'electron';
 
 // 类型导出给 renderer
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 export type MenuAction =
   | 'go_url'
   | 'reload'
@@ -62,6 +64,9 @@ export type SavedSession = {
   clickThrough?: boolean;
   mobileMode: boolean;
   bilibiliWebFullscreen?: boolean;
+  theme: ThemeMode;
+  contentProtection: boolean;
+  trayOnlyMode: boolean;
 };
 
 export type UpdateCheckResult = {
@@ -98,7 +103,7 @@ const api = {
   syncHistory: (entries: HistoryEntry[]) => ipcRenderer.invoke('sync-history', entries),
   clearHistory: (): Promise<boolean> => ipcRenderer.invoke('clear-history'),
   getSession: (): Promise<SavedSession | null> => ipcRenderer.invoke('get-session'),
-  saveSession: (session: SavedSession) => ipcRenderer.invoke('save-session', session),
+  saveSession: (patch: Partial<SavedSession>) => ipcRenderer.invoke('save-session', patch),
   getDownloads: (): Promise<DownloadEntry[]> => ipcRenderer.invoke('get-downloads'),
   showDownloadInFolder: (id: string): Promise<boolean> => ipcRenderer.invoke('show-download-in-folder', id),
   listPasswordMatches: (url: string): Promise<PasswordMatch[]> => ipcRenderer.invoke('list-password-matches', url),
@@ -201,6 +206,28 @@ const api = {
         ipcRenderer.removeListener('webview:did-finish-load', handler);
       };
     }
+  },
+
+  // ---------- 外观主题与屏幕捕获保护 ----------
+  setTheme: (theme: ThemeMode): Promise<void> => ipcRenderer.invoke('set-theme', theme),
+  setContentProtection: (enabled: boolean): Promise<void> =>
+    ipcRenderer.invoke('set-content-protection', enabled),
+  onThemeChanged: (callback: (theme: ThemeMode) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, theme: ThemeMode): void => callback(theme);
+    ipcRenderer.on('theme-changed', handler);
+    return (): void => { ipcRenderer.removeListener('theme-changed', handler); };
+  },
+  onContentProtectionChanged: (callback: (enabled: boolean) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, enabled: boolean): void => callback(enabled);
+    ipcRenderer.on('content-protection-changed', handler);
+    return (): void => { ipcRenderer.removeListener('content-protection-changed', handler); };
+  },
+  setTrayOnlyMode: (enabled: boolean): Promise<void> =>
+    ipcRenderer.invoke('set-tray-only-mode', enabled),
+  onTrayOnlyModeChanged: (callback: (enabled: boolean) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, enabled: boolean): void => callback(enabled);
+    ipcRenderer.on('tray-only-mode-changed', handler);
+    return (): void => { ipcRenderer.removeListener('tray-only-mode-changed', handler); };
   },
 
   // ---------- 自动更新 ----------

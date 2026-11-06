@@ -1,6 +1,6 @@
-appId: com.opabrow.app
-productName: opabrow
-copyright: Copyright © 2026 opabrow contributors
+appId: com.floatpane.app
+productName: FloatPane
+copyright: Copyright © 2026 FloatPane contributors
 directories:
   buildResources: build
   output: dist
@@ -34,12 +34,12 @@ mac:
   hardenedRuntime: false
   gatekeeperAssess: false
   extendInfo:
-    NSHumanReadableCopyright: Copyright © 2026 opabrow contributors.
+    NSHumanReadableCopyright: Copyright © 2026 FloatPane contributors.
     LSApplicationCategoryType: public.app-category.utilities
     CFBundleURLTypes:
-      - CFBundleURLName: opabrow.url
+      - CFBundleURLName: floatpane.url
         CFBundleURLSchemes:
-          - opabrow
+          - floatpane
     NSAppTransportSecurity:
       NSAllowsArbitraryLoads: true
   entitlements: build/entitlements.direct.plist
@@ -50,4 +50,13 @@ linux:
   target: AppImage
   icon: build/icon.png
   artifactName: ${productName}-${version}-${arch}.${ext}
+# Windows 安装向导：允许用户在安装过程中选择目标文件夹
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: FloatPane
+  include: build/installer.nsh
 publish: null

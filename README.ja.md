@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="./opabrow-icon.png" width="96" alt="opabrow アイコン" />
+  <img src="./floatpane-icon.png" width="96" alt="FloatPane アイコン" />
 </p>
 
-<h1 align="center">opabrow</h1>
+<h1 align="center">FloatPane</h1>
 
 <p align="center"><strong>macOS、Windows、Linux 向けの透明フローティングブラウザ。</strong></p>
 
@@ -11,26 +11,26 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ClaytonPetrosian/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 ライセンス" /></a>
+  <a href="https://github.com/Hpjxiangbabang/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 ライセンス" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="クロスプラットフォーム" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/version-1.0.0-2EA44F?style=flat-square" alt="v1.0.0" />
+  <img src="https://img.shields.io/badge/version-1.1.0-2EA44F?style=flat-square" alt="v1.1.0" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/ClaytonPetrosian/opabrow/releases/latest"><img src="https://img.shields.io/badge/download-latest%20release-3B82F6?style=for-the-badge" alt="ダウンロード" /></a>
-  <a href="https://claytonpetrosian.github.io/opabrow/"><img src="https://img.shields.io/badge/website-landing%20page-111827?style=for-the-badge" alt="ウェブサイト" /></a>
+  <a href="https://github.com/Hpjxiangbabang/opabrow/releases/latest"><img src="https://img.shields.io/badge/download-latest%20release-3B82F6?style=for-the-badge" alt="ダウンロード" /></a>
+  <a href="https://hpjxiangbabang.github.io/opabrow/"><img src="https://img.shields.io/badge/website-landing%20page-111827?style=for-the-badge" alt="ウェブサイト" /></a>
 </p>
 
 <p align="center">仕事の合間のひと息にも、調べものにも。気になるページをそばに置き、デスクトップは占有しない。</p>
 
 <p align="center">
-  <img src="./site/assets/opabrow-demo.gif" width="800" alt="opabrow フローティングブラウザの実演" />
+  <img src="./site/assets/opabrow-demo.gif" width="800" alt="FloatPane フローティングブラウザの実演" />
 </p>
 
-## opabrow とは
+## FloatPane とは
 
-多くのブラウザウィンドウは作業空間全体を必要とします。opabrow は、仕事の合間の気分転換にも、参照資料、ライブダッシュボード、プレイリスト、Bilibili の動画など、ほかの作業の横でいつでも見られるようにしておきたいページにも使える軽量ブラウザです。デスクトップの端で静かに待機し、作業空間を奪いません。
+多くのブラウザウィンドウは作業空間全体を必要とします。FloatPane は、仕事の合間の気分転換にも、参照資料、ライブダッシュボード、プレイリスト、Bilibili の動画など、ほかの作業の横でいつでも見られるようにしておきたいページにも使える軽量ブラウザです。デスクトップの端で静かに待機し、作業空間を奪いません。
 
 タイトルバーは通常は透明で、ポインタを上端に移動したときだけ表示されます。独立した 32px の領域を持つため、コントロールが表示されてもウェブページを覆ったり、レイアウトをずらしたりしません。
 
@@ -42,7 +42,7 @@
 
 ## ダウンロード
 
-[最新リリース](https://github.com/ClaytonPetrosian/opabrow/releases/latest) から macOS、Windows、Linux 向けのインストーラーをダウンロードできます。各リリースには以下を含みます。
+[最新リリース](https://github.com/Hpjxiangbabang/opabrow/releases/latest) から macOS、Windows、Linux 向けのインストーラーをダウンロードできます。各リリースには以下を含みます。
 
 - macOS Apple Silicon (`arm64`) および Intel (`x64`)
 - Windows x64（`.exe` インストーラー）
@@ -50,7 +50,7 @@
 
 ### macOS のインストール
 
-次回以降の署名済み macOS リリースは Developer ID で署名され、Apple の公証を受けます。ダウンロードした DMG を開き、**opabrow** を「アプリケーション」フォルダへドラッグして通常どおり起動してください。ターミナルコマンドは不要です。
+次回以降の署名済み macOS リリースは Developer ID で署名され、Apple の公証を受けます。ダウンロードした DMG を開き、**FloatPane** を「アプリケーション」フォルダへドラッグして通常どおり起動してください。ターミナルコマンドは不要です。
 
 現在の `v0.3.0` の macOS アセットはこのリリースパイプラインより前のものです。署名済みリリースの公開後に置き換えられます。
 
@@ -60,12 +60,12 @@
 
 - macOS
 - Node.js 22 以降
-- pnpm 9 以降
+- pnpm（バージョンは package.json の packageManager で固定、corepack が自動で有効化）
 
 ### ローカルで実行する
 
 ```bash
-git clone https://github.com/ClaytonPetrosian/opabrow.git
+git clone https://github.com/Hpjxiangbabang/opabrow.git
 cd opabrow
 pnpm install
 pnpm dev
@@ -86,29 +86,29 @@ pnpm build:mac
 
 入力中はローカルのナビゲーション履歴から最大 5 件の候補が表示されます。候補はページタイトルを先に、URL を後に表示します。矢印キーで選択し、`Enter` で開きます。
 
-**履歴 > 履歴を表示** または `Cmd+Shift+Y` で、最近開いたページの検索、再表示、消去ができます。**履歴** メニューからは直近 10 件をワンクリックで開けます。opabrow は最大 100 件の履歴だけをこの Mac にローカル保存し、アカウントやクラウド同期は使用しません。
+**履歴 > 履歴を表示** または `Cmd+Shift+Y` で、最近開いたページの検索、再表示、消去ができます。**履歴** メニューからは直近 10 件をワンクリックで開けます。FloatPane は最大 100 件の履歴だけをこの Mac にローカル保存し、アカウントやクラウド同期は使用しません。
 
-デフォルトのホームページは opabrow プロジェクトのリポジトリです。**ブラウズ** メニューの **現在のページをホームに設定** から、閲覧中の任意のページをローカルのホームページにできます。**プロジェクトのホームを復元** でデフォルトへ戻せます。
+デフォルトのホームページは FloatPane プロジェクトのリポジトリです。**ブラウズ** メニューの **現在のページをホームに設定** から、閲覧中の任意のページをローカルのホームページにできます。**プロジェクトのホームを復元** でデフォルトへ戻せます。
 
 ### Bilibili の動画ページ
 
-Bilibili の動画または Bangumi の再生ページを開くと、プレイヤーは自動的にウェブ全画面モードへ切り替わります。動画は利用可能なページ領域を埋めますが、opabrow のウィンドウ内にとどまります。
+Bilibili の動画または Bangumi の再生ページを開くと、プレイヤーは自動的にウェブ全画面モードへ切り替わります。動画は利用可能なページ領域を埋めますが、FloatPane のウィンドウ内にとどまります。
 
 ### ページ内検索、復元、ダウンロード
 
 `Cmd+F` で現在のページを検索できます。`Cmd+G` と `Cmd+Shift+G` で一致箇所を前後に移動でき、フローティングウィンドウを離れる必要はありません。
 
-opabrow を再起動すると、最後のページ、ウィンドウ位置とサイズ、透明度、常に手前に表示する設定、モバイルモードが復元されます。ダウンロードは通常の Downloads フォルダに保存されます。**ダウンロード** メニューまたは `Cmd+Shift+J` で進行状況と失敗を確認し、完了したファイルを Finder で表示できます。最近のダウンロード状態はこの Mac にのみ保存されます。
+FloatPane を再起動すると、最後のページ、ウィンドウ位置とサイズ、透明度、常に手前に表示する設定、モバイルモードが復元されます。ダウンロードは通常の Downloads フォルダに保存されます。**ダウンロード** メニューまたは `Cmd+Shift+J` で進行状況と失敗を確認し、完了したファイルを Finder で表示できます。最近のダウンロード状態はこの Mac にのみ保存されます。
 
 常に手前に表示する際は、クリック透過がデフォルトで有効になります。クリックとスクロールは背面のアプリへ渡されます。フローティングページを操作したい場合は、**表示 > 常に手前のときにクリックを透過** から無効にできます。
 
 ### ブックマークとブラウザからのインポート
 
-macOS 上部の **ブックマーク** メニューで管理するため、閲覧画面の領域を占有しません。`Cmd+D` で現在のページを追加または削除し、メニューのフォルダ階層から直接リンクを開けます。ローカルの Chrome、Safari からのインポートと、ブラウザが出力した標準 HTML ブックマークファイルの選択に対応します。ブックマークのデータは opabrow のローカルアプリケーションデータ内にのみ保存されます。
+macOS 上部の **ブックマーク** メニューで管理するため、閲覧画面の領域を占有しません。`Cmd+D` で現在のページを追加または削除し、メニューのフォルダ階層から直接リンクを開けます。ローカルの Chrome、Safari からのインポートと、ブラウザが出力した標準 HTML ブックマークファイルの選択に対応します。ブックマークのデータは FloatPane のローカルアプリケーションデータ内にのみ保存されます。
 
 ### Chrome からのパスワード移行と手動入力
 
-Chrome パスワードマネージャーからパスワード CSV を書き出し、opabrow の **パスワード > Chrome パスワード CSV をインポート…** を選ぶことで、保存済みログイン情報を意図的に移行できます。CSV は選択と警告の確認後にだけ読み込まれ、パスワードは opabrow のローカルアプリケーションデータへ書き込まれる前に macOS キーチェーンで暗号化されます。opabrow は Chrome の内部パスワードデータベースを読み取らず、パスワードをサーバーへ送信したり、クラウド同期したりしません。
+Chrome パスワードマネージャーからパスワード CSV を書き出し、FloatPane の **パスワード > Chrome パスワード CSV をインポート…** を選ぶことで、保存済みログイン情報を意図的に移行できます。CSV は選択と警告の確認後にだけ読み込まれ、パスワードは FloatPane のローカルアプリケーションデータへ書き込まれる前に macOS キーチェーンで暗号化されます。FloatPane は Chrome の内部パスワードデータベースを読み取らず、パスワードをサーバーへ送信したり、クラウド同期したりしません。
 
 一致する HTTPS オリジンでは、**パスワード > 現在のページを入力** または `Cmd+Shift+P` を選択します。ページ読み込み時に自動入力されることはありません。複数のアカウントが一致する場合は、先にアカウントを選択します。書き出した元の CSV は自身で管理し、移行後は削除してください。
 
@@ -151,6 +151,14 @@ pnpm build
 
 バグ報告、デザインに関するフィードバック、焦点を絞った Pull Request を歓迎します。Pull Request を作成する前に [CONTRIBUTING.md](CONTRIBUTING.md) をお読みください。
 
+## 二次開発で追加した機能
+
+- **インストール先の選択**：Windows インストーラーを複数ステップのウィザードに変更し、インストール先フォルダーを指定可能。macOS DMG と Linux AppImage は任意の場所に配置できます。
+- **明示的なテーマ切替**：表示 / トレイメニュー → 外観テーマ → ライト / ダーク / システムに従う。既定はライトで、OS 設定には追従しません。選択は `session.json` に保存され、アプリ UI と Web ページの `prefers-color-scheme` の両方に適用されます。
+- **画面キャプチャ防止**：表示 / トレイメニューのスイッチで `BrowserWindow.setContentProtection(true)` を有効化します。物理的なカメラ撮影、キャプチャカード、高権限のキャプチャツールは防げません。Linux の対応は限定的です。
+- **単一データディレクトリ（アンインストール後に残さない）**：`userData`、`sessionData`、キャッシュ、Cookie、一時ファイル、クラッシュダンプ、ログを実行ファイル隣の `FloatPane-data/` に集約します。インストール先に追従し、アンインストーラー（`build/installer.nsh`）が削除します。表示 / トレイメニュー → データ管理からディレクトリを開く、キャッシュと Cookie を削除できます。ダウンロードファイルは OS のダウンロードフォルダーに残ります（ユーザー資産のため自動削除しません）。
+- **トレイのみモード**：表示 / トレイメニュー → トレイのみモード。有効にするとタスクバーに表示されず、最小化と閉じるは「隠す」になり、トレイアイコンのクリックまたはトレイメニューから復帰します。終了はトレイメニューの「終了」のみです。設定は保持されます。
+
 ## ライセンス
 
-opabrow は [Mozilla Public License 2.0](LICENSE) のもとで公開されています。
+FloatPane は [Mozilla Public License 2.0](LICENSE) のもとで公開されています。

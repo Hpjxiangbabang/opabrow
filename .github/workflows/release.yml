@@ -130,5 +130,5 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" release-artifacts/* --clobber
           else
-            gh release create "$TAG" release-artifacts/* --title "opabrow $TAG" --generate-notes
+            gh release create "$TAG" release-artifacts/* --title "FloatPane $TAG" --generate-notes
           fi

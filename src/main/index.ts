@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, shell, ipcMain, Menu, MenuItemConstructorOptions, Tray, nativeImage, screen, session, WebContentsView } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, shell, ipcMain, Menu, MenuItemConstructorOptions, Tray, nativeImage, screen, session, WebContentsView, nativeTheme } from 'electron';
 import { basename, extname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -12,8 +12,10 @@ import {
 } from './bookmarks';
 import { PasswordStore } from './passwords';
 import { HistoryEntry, sanitizeHistoryEntries } from './history';
-import { AppSession, DownloadEntry, SessionStore, sanitizeSessionPatch } from './session';
+import { AppSession, DownloadEntry, SessionStore, ThemeMode, sanitizeSessionPatch } from './session';
 import { registerUpdaterIpc, startAutoUpdateCheck, stopAutoUpdateCheck } from './updater';
+// 副作用模块：必须在 app.whenReady() 之前重定向所有数据路径
+import { dataLocation } from './dataPaths';
 
 // ---------- 窗口引用 ----------
 let mainWindow: BrowserWindow | null = null;
@@ -23,6 +25,10 @@ let passwordStore: PasswordStore | null = null;
 let sessionStore: SessionStore | null = null;
 let mobileModeEnabled = false;
 let clickThroughEnabled = true;
+let themeMode: ThemeMode = 'light';
+let contentProtectionEnabled = false;
+let trayOnlyMode = false;
+let isAppQuitting = false;
 let ipcHandlersRegistered = false;
 let recentHistory: HistoryEntry[] = [];
 let recentDownloads: DownloadEntry[] = [];
@@ -38,9 +44,104 @@ let webContentBounds = { x: 0, y: TITLEBAR_HEIGHT, width: 0, height: 0 };
 
 // macOS 现代 Chrome UA(避免 B 站"浏览器版本过低")
 const CHROME_UA =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 opabrow/0.1';
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 FloatPane/0.1';
 const MOBILE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+
+// ---------- 外观主题与屏幕捕获保护 ----------
+// 主题不再跟随系统：默认 light，用户可在视图/托盘菜单中显式切换，
+// 选择写入 session.json 并同时作用于应用 UI 与网页 prefers-color-scheme。
+async function applyWebColorScheme(
+  theme: ThemeMode,
+  contents = webContentView?.webContents
+): Promise<void> {
+  if (!contents || contents.isDestroyed()) return;
+  try {
+    if (!contents.debugger.isAttached()) contents.debugger.attach('1.3');
+    await contents.debugger.sendCommand('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-color-scheme', value: theme === 'system' ? '' : theme }]
+    });
+  } catch (error) {
+    console.warn('[FloatPane] failed to apply web color scheme:', error);
+  }
+}
+
+function applyTheme(theme: ThemeMode, persist = true): void {
+  themeMode = theme;
+  nativeTheme.themeSource = theme;
+  void applyWebColorScheme(theme);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('theme-changed', theme);
+  }
+  if (persist) sessionStore?.update({ theme });
+  refreshApplicationMenu();
+}
+
+function applyContentProtection(enabled: boolean, persist = true): void {
+  contentProtectionEnabled = enabled;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setContentProtection(enabled);
+    mainWindow.webContents.send('content-protection-changed', enabled);
+  }
+  if (persist) sessionStore?.update({ contentProtection: enabled });
+  refreshApplicationMenu();
+}
+
+function applyTrayOnlyMode(enabled: boolean, persist = true): void {
+  if (enabled && (!tray || tray.isDestroyed())) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      void dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: '无法启用仅托盘模式',
+        message: '系统托盘不可用，启用后将无法恢复窗口，操作已取消。'
+      });
+    }
+    return;
+  }
+  trayOnlyMode = enabled;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setSkipTaskbar(enabled);
+    if (!enabled && !mainWindow.isVisible()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+    mainWindow.webContents.send('tray-only-mode-changed', enabled);
+  }
+  if (persist) sessionStore?.update({ trayOnlyMode: enabled });
+  refreshApplicationMenu();
+}
+
+async function clearBrowsingData(win: BrowserWindow): Promise<void> {
+  const answer = await dialog.showMessageBox(win, {
+    type: 'warning',
+    title: '清除浏览数据',
+    message: '将清除网页缓存、Cookies、localStorage 与站点数据。收藏夹、历史记录、密码和窗口设置不受影响。',
+    buttons: ['取消', '清除'],
+    defaultId: 0,
+    cancelId: 0
+  });
+  if (answer.response !== 1) return;
+  const target = webContentView?.webContents.session ?? session.defaultSession;
+  try {
+    await target.clearCache();
+    await target.clearStorageData({
+      storages: [
+        'cookies', 'filesystem', 'indexdb', 'localstorage',
+        'shadercache', 'serviceworkers', 'cachestorage'
+      ]
+    });
+    await dialog.showMessageBox(win, {
+      type: 'info', title: '清除完成', message: '缓存、Cookies 与站点数据已清除。'
+    });
+  } catch (error) {
+    await dialog.showMessageBox(win, {
+      type: 'warning',
+      title: '清除失败',
+      message: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
 
 function syncWebContentBounds(): void {
   if (!mainWindow || mainWindow.isDestroyed() || !webContentView) return;
@@ -72,7 +173,7 @@ function createWebContentView(initialUrl: string): WebContentsView {
   // 拦截新窗口:在当前 webContents 内导航
   view.webContents.setWindowOpenHandler((details) => {
     if (is.dev) {
-      console.log('[opabrow] view setWindowOpenHandler:', details.url);
+      console.log('[FloatPane] view setWindowOpenHandler:', details.url);
     }
     view.webContents.loadURL(details.url);
     return { action: 'deny' };
@@ -90,7 +191,10 @@ function createWebContentView(initialUrl: string): WebContentsView {
   view.webContents.on('did-navigate-in-page', (_e, url) => send('webview:did-navigate-in-page', url));
   view.webContents.on('page-title-updated', (_e, title) => send('webview:page-title-updated', title));
   view.webContents.on('found-in-page', (_e, result) => send('webview:found-in-page', result));
-  view.webContents.on('did-finish-load', () => send('webview:did-finish-load'));
+  view.webContents.on('did-finish-load', () => {
+    send('webview:did-finish-load');
+    void applyWebColorScheme(themeMode, view.webContents);
+  });
 
   // ---------- 右键菜单 ----------
   // 为网页内容提供复制/粘贴/搜索等常见右键操作。
@@ -206,7 +310,7 @@ function createWebContentView(initialUrl: string): WebContentsView {
   // 初始加载
   if (initialUrl) {
     void view.webContents.loadURL(initialUrl).catch((error) => {
-      console.warn('[opabrow] initial loadURL failed:', error);
+      console.warn('[FloatPane] initial loadURL failed:', error);
     });
   }
 
@@ -218,6 +322,7 @@ function attachWebContentView(win: BrowserWindow, initialUrl: string): void {
   webContentView = createWebContentView(initialUrl);
   win.contentView.addChildView(webContentView);
   syncWebContentBounds();
+  void applyWebColorScheme(themeMode);
   // 窗口尺寸变化时同步 view bounds
   win.on('resize', () => syncWebContentBounds());
 }
@@ -253,7 +358,7 @@ installChromiumPerformanceSwitches();
 app.on('web-contents-created', (_event, contents) => {
   contents.setWindowOpenHandler((details) => {
     if (is.dev) {
-      console.log('[opabrow] setWindowOpenHandler intercepted:', details.url, 'in wc', contents.id);
+      console.log('[FloatPane] setWindowOpenHandler intercepted:', details.url, 'in wc', contents.id);
     }
     // 在当前 webContents 内直接 navigate —— 这样 history 累积,前进后退能用
     // 不能用 send IPC 通知 renderer 改 webview.src,那样会重置 history
@@ -262,7 +367,7 @@ app.on('web-contents-created', (_event, contents) => {
   });
   contents.on('will-navigate', (event, url, isInPlace, isMainFrame) => {
     if (is.dev) {
-      console.log('[opabrow] will-navigate:', url, 'isInPlace=', isInPlace, 'isMainFrame=', isMainFrame, 'wc=', contents.id);
+      console.log('[FloatPane] will-navigate:', url, 'isInPlace=', isInPlace, 'isMainFrame=', isMainFrame, 'wc=', contents.id);
     }
     // 安全: 阻止 navigation 到非 http(s)/file: 协议
     const parsed = new URL(url);
@@ -293,7 +398,7 @@ function createMainWindow(sessionState: AppSession): BrowserWindow {
     movable: true, // 允许拖动
     resizable: true,
     center: true,
-    title: 'opabrow',
+    title: 'FloatPane',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false, // iframe 用 allow-same-origin,需要这一关
@@ -307,6 +412,18 @@ function createMainWindow(sessionState: AppSession): BrowserWindow {
   // 自定义 UA
   win.webContents.setUserAgent(CHROME_UA);
   win.setAlwaysOnTop(sessionState.alwaysOnTop, sessionState.alwaysOnTop ? 'floating' : 'normal');
+  win.setContentProtection(contentProtectionEnabled);
+  win.setSkipTaskbar(trayOnlyMode);
+  // 仅托盘模式：最小化与关闭都改为隐藏，只能从托盘恢复。
+  win.on('minimize', () => {
+    if (trayOnlyMode) win.hide();
+  });
+  win.on('close', (event) => {
+    if (trayOnlyMode && !isAppQuitting) {
+      event.preventDefault();
+      win.hide();
+    }
+  });
   applyClickThrough(win);
 
   // 加载 dev / prod URL
@@ -607,7 +724,7 @@ async function confirmAndClearHistory(win: BrowserWindow): Promise<boolean> {
   const result = await dialog.showMessageBox(win, {
     type: 'warning',
     title: '清空历史记录',
-    message: '确定要删除 opabrow 本机保存的全部历史记录吗？此操作无法撤销。',
+    message: '确定要删除 FloatPane 本机保存的全部历史记录吗？此操作无法撤销。',
     buttons: ['取消', '清空'],
     defaultId: 0,
     cancelId: 0
@@ -625,17 +742,17 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
 
   // macOS 专属应用菜单（关于/服务/隐藏/退出），Windows/Linux 托盘不需要这些
   const appMenu: MenuItemConstructorOptions = {
-    label: 'opabrow',
+    label: 'FloatPane',
     submenu: [
-      { role: 'about', label: '关于 opabrow' },
+      { role: 'about', label: '关于 FloatPane' },
       { type: 'separator' },
       { role: 'services', label: '服务' },
       { type: 'separator' },
-      { role: 'hide', label: '隐藏 opabrow' },
+      { role: 'hide', label: '隐藏 FloatPane' },
       { role: 'hideOthers', label: '隐藏其他' },
       { role: 'unhide', label: '显示全部' },
       { type: 'separator' },
-      { role: 'quit', label: '退出 opabrow' }
+      { role: 'quit', label: '退出 FloatPane' }
     ]
   };
 
@@ -834,7 +951,7 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
             const confirmation = await dialog.showMessageBox(win, {
               type: 'warning',
               title: '导入 Chrome 密码',
-              message: 'Chrome 导出的 CSV 含有明文密码。opabrow 只会读取这一次，并使用 macOS 钥匙串加密保存。',
+              message: 'Chrome 导出的 CSV 含有明文密码。FloatPane 只会读取这一次，并使用 macOS 钥匙串加密保存。',
               buttons: ['取消', '导入'],
               defaultId: 0,
               cancelId: 0
@@ -868,7 +985,7 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
             const result = await dialog.showMessageBox(win, {
               type: 'warning',
               title: '清空本机密码',
-              message: '确定要删除 opabrow 本机保存的全部密码吗？此操作无法撤销。',
+              message: '确定要删除 FloatPane 本机保存的全部密码吗？此操作无法撤销。',
               buttons: ['取消', '清空'],
               defaultId: 0,
               cancelId: 0
@@ -898,6 +1015,45 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
   const viewMenu: MenuItemConstructorOptions = {
     label: '视图',
     submenu: [
+      {
+        label: '仅托盘模式（不显示在任务栏）',
+        type: 'checkbox',
+        checked: trayOnlyMode,
+        click: (menuItem) => applyTrayOnlyMode(menuItem.checked)
+      },
+      {
+        label: '数据管理',
+        submenu: [
+          { label: `数据目录：${dataLocation.root}`, enabled: false },
+          { type: 'separator' },
+          { label: '打开数据目录', click: () => void shell.openPath(dataLocation.root) },
+          { label: '清除缓存与 Cookies…', click: () => void clearBrowsingData(win) },
+          { type: 'separator' },
+          {
+            label: dataLocation.source === 'portable'
+              ? '模式：跟随安装目录（卸载自动清除）'
+              : `模式：${dataLocation.source}（卸载脚本清理）`,
+            enabled: false
+          }
+        ]
+      },
+      { type: 'separator' },
+      {
+        label: '外观主题',
+        submenu: (['light', 'dark', 'system'] as const).map((mode) => ({
+          label: mode === 'light' ? '浅色' : mode === 'dark' ? '深色' : '跟随系统',
+          type: 'radio' as const,
+          checked: themeMode === mode,
+          click: () => applyTheme(mode)
+        }))
+      },
+      {
+        label: '防止被截图 / 录屏 / 共享屏幕捕获',
+        type: 'checkbox',
+        checked: contentProtectionEnabled,
+        click: (menuItem) => applyContentProtection(menuItem.checked)
+      },
+      { type: 'separator' },
       {
         label: '切换置顶',
         accelerator: 'CmdOrCtrl+T',
@@ -988,6 +1144,7 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
           if (win.isVisible()) {
             win.hide();
           } else {
+            if (win.isMinimized()) win.restore();
             win.show();
             win.focus();
           }
@@ -997,7 +1154,7 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
       { role: 'minimize', label: '最小化' },
       { type: 'separator' },
       {
-        label: '退出 opabrow',
+        label: '退出 FloatPane',
         click: () => app.quit()
       }
     ]
@@ -1042,11 +1199,11 @@ function createTray(win: BrowserWindow): Tray {
   // Windows 上 resize 到 16x16,使用 nearest 插值获得清晰边缘
   const icon = nativeImage.createFromPath(iconPath);
   if (icon.isEmpty()) {
-    console.warn('[opabrow] tray icon not found at:', iconPath);
+    console.warn('[FloatPane] tray icon not found at:', iconPath);
   }
   const trayIcon = icon.resize({ width: 16, height: 16 });
   const trayInstance = new Tray(trayIcon);
-  trayInstance.setToolTip('opabrow');
+  trayInstance.setToolTip('FloatPane');
   if (bookmarkStore && passwordStore) {
     trayInstance.setContextMenu(buildAppMenu(win, bookmarkStore, passwordStore));
   }
@@ -1057,6 +1214,7 @@ function createTray(win: BrowserWindow): Tray {
     if (win.isVisible() && win.isFocused()) {
       win.hide();
     } else {
+      if (win.isMinimized()) win.restore();
       win.show();
       win.focus();
     }
@@ -1068,6 +1226,19 @@ function createTray(win: BrowserWindow): Tray {
 // ---------- IPC handlers ----------
 function registerIpc(bookmarks: BookmarkStore, passwords: PasswordStore): void {
   if (ipcHandlersRegistered) return;
+
+  ipcMain.handle('set-theme', (event, theme: unknown) => {
+    if (event.sender.id !== mainWindow?.webContents.id) return;
+    if (theme === 'light' || theme === 'dark' || theme === 'system') applyTheme(theme);
+  });
+  ipcMain.handle('set-content-protection', (event, enabled: unknown) => {
+    if (event.sender.id !== mainWindow?.webContents.id) return;
+    if (typeof enabled === 'boolean') applyContentProtection(enabled);
+  });
+  ipcMain.handle('set-tray-only-mode', (event, enabled: unknown) => {
+    if (event.sender.id !== mainWindow?.webContents.id) return;
+    if (typeof enabled === 'boolean') applyTrayOnlyMode(enabled);
+  });
   ipcHandlersRegistered = true;
 
   // 设置窗口透明度 0.1 - 1.0
@@ -1190,7 +1361,7 @@ function registerWebContentIpc(): void {
     if (!webContentView) return false;
     if (webContentView.webContents.getURL() === url) return true;
     void webContentView.webContents.loadURL(url).catch((error) => {
-      console.warn('[opabrow] webview loadURL failed:', error);
+      console.warn('[FloatPane] webview loadURL failed:', error);
     });
     return true;
   });
@@ -1201,7 +1372,7 @@ function registerWebContentIpc(): void {
     try {
       webContentView.webContents.reload();
     } catch (error) {
-      console.warn('[opabrow] webview reload failed:', error);
+      console.warn('[FloatPane] webview reload failed:', error);
     }
   });
 
@@ -1211,7 +1382,7 @@ function registerWebContentIpc(): void {
     try {
       webContentView.webContents.goBack();
     } catch (error) {
-      console.warn('[opabrow] webview goBack failed:', error);
+      console.warn('[FloatPane] webview goBack failed:', error);
     }
   });
   ipcMain.handle('webview:go-forward', (event) => {
@@ -1219,7 +1390,7 @@ function registerWebContentIpc(): void {
     try {
       webContentView.webContents.goForward();
     } catch (error) {
-      console.warn('[opabrow] webview goForward failed:', error);
+      console.warn('[FloatPane] webview goForward failed:', error);
     }
   });
 
@@ -1247,7 +1418,7 @@ function registerWebContentIpc(): void {
     try {
       webContentView.webContents.findInPage(query, (options as Electron.FindInPageOptions) ?? {});
     } catch (error) {
-      console.warn('[opabrow] webview findInPage failed:', error);
+      console.warn('[FloatPane] webview findInPage failed:', error);
     }
   });
   ipcMain.handle('webview:stop-find-in-page', (event, action: unknown) => {
@@ -1255,7 +1426,7 @@ function registerWebContentIpc(): void {
     try {
       webContentView.webContents.stopFindInPage((action as 'clearSelection' | 'keepSelection' | 'activateSelection') ?? 'clearSelection');
     } catch (error) {
-      console.warn('[opabrow] webview stopFindInPage failed:', error);
+      console.warn('[FloatPane] webview stopFindInPage failed:', error);
     }
   });
 
@@ -1266,7 +1437,7 @@ function registerWebContentIpc(): void {
     try {
       return await webContentView.webContents.executeJavaScript(script);
     } catch (error) {
-      console.warn('[opabrow] webview executeJavaScript failed:', error);
+      console.warn('[FloatPane] webview executeJavaScript failed:', error);
       return null;
     }
   });
@@ -1274,7 +1445,7 @@ function registerWebContentIpc(): void {
 
 // ---------- App 生命周期 ----------
 app.whenReady().then(async () => {
-  electronApp.setAppUserModelId('com.tan.opabrow');
+  electronApp.setAppUserModelId('com.floatpane.app');
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
@@ -1289,6 +1460,10 @@ app.whenReady().then(async () => {
   const sessionState = sessionStore.getSnapshot();
   mobileModeEnabled = sessionState.mobileMode;
   clickThroughEnabled = sessionState.clickThrough;
+  themeMode = sessionState.theme;
+  contentProtectionEnabled = sessionState.contentProtection;
+  trayOnlyMode = sessionState.trayOnlyMode;
+  nativeTheme.themeSource = themeMode;
   recentDownloads = sessionState.downloads;
   installDownloadTracking();
 
@@ -1315,6 +1490,10 @@ app.whenReady().then(async () => {
       refreshApplicationMenu();
     }
   });
+});
+
+app.on('before-quit', () => {
+  isAppQuitting = true;
 });
 
 app.on('window-all-closed', () => {

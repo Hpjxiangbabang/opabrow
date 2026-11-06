@@ -43,6 +43,26 @@ describe('session sanitization', () => {
     expect(sanitizeSessionPatch({ bilibiliWebFullscreen: false })).toEqual({ bilibiliWebFullscreen: false });
   });
 
+  it('defaults theme to light and content protection to off', () => {
+    const session = sanitizeSession({});
+    expect(session.theme).toBe('light');
+    expect(session.contentProtection).toBe(false);
+  });
+
+  it('accepts theme and content protection patches, rejects invalid values', () => {
+    expect(sanitizeSessionPatch({ theme: 'dark', contentProtection: true })).toEqual({
+      theme: 'dark',
+      contentProtection: true
+    });
+    expect(sanitizeSessionPatch({ theme: 'neon', contentProtection: 'yes' })).toEqual({});
+  });
+
+  it('defaults trayOnlyMode to off and accepts it in patch', () => {
+    expect(sanitizeSession({}).trayOnlyMode).toBe(false);
+    expect(sanitizeSessionPatch({ trayOnlyMode: true })).toEqual({ trayOnlyMode: true });
+    expect(sanitizeSessionPatch({ trayOnlyMode: 'yes' })).toEqual({});
+  });
+
   it('rejects unsafe renderer patches', () => {
     expect(sanitizeSessionPatch({ url: 'file:///private', opacity: -4, alwaysOnTop: 'yes' })).toEqual({ opacity: 0.1 });
   });

@@ -1,6 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 export type DownloadState = 'progressing' | 'completed' | 'failed';
 
 export type DownloadEntry = {
@@ -30,6 +32,9 @@ export type AppSession = {
   bilibiliWebFullscreen: boolean;
   bounds: WindowBounds | null;
   downloads: DownloadEntry[];
+  theme: ThemeMode;
+  contentProtection: boolean;
+  trayOnlyMode: boolean;
 };
 
 const DEFAULT_SESSION: AppSession = {
@@ -40,7 +45,10 @@ const DEFAULT_SESSION: AppSession = {
   mobileMode: false,
   bilibiliWebFullscreen: true,
   bounds: null,
-  downloads: []
+  downloads: [],
+  theme: 'light',
+  contentProtection: false,
+  trayOnlyMode: false
 };
 const DOWNLOAD_LIMIT = 30;
 
@@ -107,6 +115,10 @@ function sanitizeDownloads(value: unknown): DownloadEntry[] {
   return entries;
 }
 
+function isThemeMode(value: unknown): value is ThemeMode {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
 export function sanitizeSession(value: unknown): AppSession {
   if (!value || typeof value !== 'object') return { ...DEFAULT_SESSION };
   const session = value as Partial<AppSession>;
@@ -123,7 +135,10 @@ export function sanitizeSession(value: unknown): AppSession {
     // 进程重启时没有可继续复用的 DownloadItem，遗留中的任务应明确显示为失败。
     downloads: sanitizeDownloads(session.downloads).map((entry) =>
       entry.state === 'progressing' ? { ...entry, state: 'failed' } : entry
-    )
+    ),
+    theme: isThemeMode(session.theme) ? session.theme : DEFAULT_SESSION.theme,
+    contentProtection: session.contentProtection === true,
+    trayOnlyMode: session.trayOnlyMode === true
   };
 }
 
@@ -137,6 +152,9 @@ export function sanitizeSessionPatch(value: unknown): Partial<AppSession> {
   if (typeof patch.clickThrough === 'boolean') next.clickThrough = patch.clickThrough;
   if (typeof patch.mobileMode === 'boolean') next.mobileMode = patch.mobileMode;
   if (typeof patch.bilibiliWebFullscreen === 'boolean') next.bilibiliWebFullscreen = patch.bilibiliWebFullscreen;
+  if (isThemeMode(patch.theme)) next.theme = patch.theme;
+  if (typeof patch.contentProtection === 'boolean') next.contentProtection = patch.contentProtection;
+  if (typeof patch.trayOnlyMode === 'boolean') next.trayOnlyMode = patch.trayOnlyMode;
   return next;
 }
 
