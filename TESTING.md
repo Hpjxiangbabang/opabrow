@@ -252,3 +252,74 @@ C 先消除实质性风险（菜单被截屏时不再泄露任何用户数据）
    深浅主题下箭头颜色与文字一致；拉宽后恢复滑块，数值连续不跳变。
 3. 开启防捕获后展开托盘菜单：收藏 / 历史 / 下载 / 密码显示「内容已隐藏」，
    标签项只显示序号不含网页标题；关闭防捕获后内容恢复。
+
+
+---
+
+## T-13 重大事故：安装后提示「此应用无法在你的电脑上运行」（2026-11-07）
+
+**现象**：用户安装 v1.1.3 后运行，Windows 弹出
+「此应用无法在你的电脑上运行。若要找到适用于你的电脑的版本，请咨询软件发布者。」
+（英文 *This app can't run on your PC. To find a version for your PC, check with the software publisher.*）
+
+### 已逐项排除（本机实测）
+
+| 排查项 | 方法 | 结果 |
+| --- | --- | --- |
+| 产物损坏 / 磁盘写满残留空洞 | 解析应用 exe 与安装器 exe 的 PE 节表，检查 `PointerToRawData + SizeOfRawData` 是否越界、尾部 2KB/4KB 是否全零 | 应用 exe 15 节、最大 raw end = 225,485,824 = 文件大小；安装器 5 节、最大 raw end 71,168；均无越界、尾部有非零数据 → **完好** |
+| 架构不匹配 | `PROCESSOR_ARCHITECTURE=AMD64`、OS 64 位 Build 22631；应用 exe `Machine=0x8664 PE32+`，安装器 `0x14c PE32`（NSIS 32 位，x64 Windows 可运行） | **匹配** |
+| 安装包压缩数据损坏 | `7za l` 列出 75 个文件 / 395,126,516 字节；`7za x` 完整解压出 377 MB | **完好** |
+| 解压后的应用能否启动 | 干净环境（`env -u ELECTRON_RUN_AS_NODE -u NODE_OPTIONS`）运行解压出的 `FloatPane.exe` | 成功加载 `resources/app.asar` 并进入主进程（打印托盘图标路径与页面加载日志）→ **可运行** |
+| 环境变量污染 | 查 Process / User / Machine 三级 `ELECTRON_RUN_AS_NODE`、`NODE_OPTIONS` | 仅 Agent 进程有；**用户级/系统级均未设置** |
+| 智能应用控制（SAC） | `HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy\VerifiedAndReputablePolicyState` | `0`（关闭）→ 本机未启用 |
+| 下载标记（MOTW） | `Get-Item -Stream *` | 两个 exe 均只有 `:$DATA`，无 `Zone.Identifier` |
+
+**结论**：v1.1.3 的代码、编译产物、NSIS 安装包内容均无损，在本机可运行。
+错误来自 Windows 运行侧的策略判定，或用户实际拿到的文件与构建产物不一致。
+
+### 产物校验值（用于核对用户手上的文件是否被截断）
+
+- `FloatPane-Setup-1.1.3-x64.exe`：108,185,408 字节，
+  SHA-256 `430fede0484db9015a54fcddd3cd91fca65564e26b496feda219d7eb2c2064fa`
+- `FloatPane-1.1.3-win-x64-portable.zip`：149,760,590 字节，
+  SHA-256 `0c27a363d635199a4ef76d004671efa457a8b4a87c1ad4b54f8e1b16e6f30219`
+- 解压后的主程序 `FloatPane.exe`：225,485,824 字节，
+  SHA-256 `9891192cf830d2431ed9f0570dbe6c7cfb7657fab512604c8b2e077e36dd672d`
+- 两个 exe 均为 **未签名**（`Get-AuthenticodeSignature` = `NotSigned`）。
+
+### 可能原因（按概率排序）
+
+1. **文件在复制/传输中被截断**：D 盘刚经历 100% 占满，108 MB 安装包复制过程可能中断。
+   Windows 对不完整 PE 会显示本错误。→ 先核对上面的大小与 SHA-256。
+2. **另一台电脑的策略拦截**：Windows 11 智能应用控制 / SmartScreen / AppLocker /
+   第三方安全软件对**未签名**可执行文件拦截。微软官方说明：无法对单个应用绕过 SAC，
+   开发者需用有效证书签名。本机 SAC 为关闭，但用户可能在其他设备上安装。
+3. **安装路径 / 快捷方式**：安装到 `D://Program Files (x86)\...` 等受保护目录时，
+   部分安全策略会限制未签名程序运行。
+4. **ARM64 设备运行 x64 包**：本包仅 `x64`，不支持 ARM64 Windows。
+
+### 立即可执行的分叉验证
+
+1. 核对用户手上安装包的 SHA-256 / 大小与上述一致。
+2. 使用 **免安装便携版** `FloatPane-1.1.3-win-x64-portable.zip`：解压到任意普通目录
+   （避开 `Program Files`），直接双击 `FloatPane.exe`。
+   - 便携版能运行 → 问题在 NSIS 安装器或安装路径/快捷方式；
+   - 便携版同样报错 → 问题在系统策略或未签名拦截。
+   便携版不写注册表、不创建快捷方式，删除文件夹即彻底清理。
+3. 右键 exe → 属性 → 若有「解除阻止」勾选后应用；再试「以管理员身份运行」。
+4. 检查 Windows 安全中心 → 应用和浏览器控制 → SmartScreen / 智能应用控制状态。
+   **注意**：关闭智能应用控制不可逆（需重置系统才能重新开启），仅在确认文件可信后操作。
+
+### 长期方案（工程侧）
+
+- 根本解决是 **Authenticode 代码签名**：OV/EV 代码签名证书、Azure Trusted Signing，
+  或面向开源项目的 SignPath 免费签名服务。签名后 SAC / SmartScreen 才会把应用判为可信。
+- 若要覆盖 ARM64 设备，需在 CI 增加 `--arm64` 构建并分发对应安装包。
+- 自签名证书 + 导入受信任根对 SmartScreen / SAC **无效**（微软要求受信任 CA 签发的有效签名），
+  因此不作为方案。
+
+### 需要用户确认的信息
+
+1. 错误发生在**双击安装包时**，还是**安装完成后运行应用 / 桌面快捷方式时**？
+2. 是否在本机（Windows 11 专业版 22631、AMD64）运行，还是拷贝到了其他电脑？
+3. 安装目标路径、完整错误截图、以及 Windows 事件查看器对应时间点的记录。
