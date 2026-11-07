@@ -14,7 +14,7 @@
   <a href="https://github.com/Hpjxiangbabang/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 许可证" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="跨平台" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/version-1.1.2-2EA44F?style=flat-square" alt="v1.1.2" />
+  <img src="https://img.shields.io/badge/version-1.1.3-2EA44F?style=flat-square" alt="v1.1.3" />
 </p>
 
 <p align="center">
@@ -159,6 +159,7 @@ pnpm build
   注意：无法阻止手机拍摄、外部采集卡或具备高权限的捕获工具；Linux 支持有限；部分远程桌面 / 虚拟显示环境下开启后窗口可能不可见。
 
 - **统一数据目录（卸载无残留）**：`userData`、`sessionData`、缓存、Cookies、临时文件、崩溃转储、日志全部重定向到安装目录下的 `FloatPane-data/`，随安装地址一起移动；卸载程序通过 `build/installer.nsh` 删除该目录。视图菜单 / 托盘菜单 → 数据管理，可查看并打开数据目录、清除缓存与 Cookies。下载文件仍保存在系统下载目录（属于用户资产，不自动删除）。
+- **透明度控件（v1.1.3）**：宽度足够时用拖动条；窗口收窄后自动切换为圆角三角步进器并显示当前百分比，箭头用内联 SVG 跟随深浅主题，不依赖外部图片素材。
 - **标签页（v1.1.2）**：「标签」菜单与编辑 / 浏览 / 历史等同级，二级菜单列出全部已打开标签（可直接切换），分隔线下是「新建标签页 / 关闭当前标签页」。不设可见标签栏以保持浮层极简；标签列表重启后自动恢复。用户设置（主题、主页、历史、标签）统一保存在固定数据目录，升级安装不会丢失。
 - **置顶交互（v1.1.1）**：置顶默认完全可交互，不再附带鼠标穿透；需要浮层参考时可在视图菜单 / 托盘菜单开启「鼠标移出窗口时自动穿透」，光标在窗口内可交互、移出窗口则事件落到下层应用。设计依据见 `TESTING.md`。
 - **仅托盘模式**：视图菜单 / 托盘菜单 → 仅托盘模式。开启后窗口从任务栏隐藏，最小化与关闭都改为隐藏，只能单击托盘图标或使用托盘菜单「显示 / 隐藏」恢复；托盘菜单「退出」才是真正退出。状态持久化。

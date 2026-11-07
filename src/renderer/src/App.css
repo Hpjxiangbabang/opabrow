@@ -944,13 +944,70 @@ body {
   text-align: right;
 }
 
+/* ---------- 窄窗口下的透明度步进器（v1.1.3） ----------
+   宽度足够时用滑块；宽度不足时切换为「圆角三角 + 数值」步进器，
+   而不是直接隐藏控件。数值标签保留，避免纯箭头缺少当前值反馈。 */
+.opacity-stepper {
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.opacity-step {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--ui-fg) 14%, transparent);
+  border-radius: 7px;
+  place-items: center;
+  background: color-mix(in srgb, var(--ui-fg) 8%, transparent);
+  color: var(--ui-fg);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.opacity-step:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-fg) 18%, transparent);
+}
+
+.opacity-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.opacity-step svg {
+  display: block;
+}
+
+.opacity-stepper-value {
+  min-width: 34px;
+  color: var(--ui-fg);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
 @media (max-width: 760px) {
   .titlebar-address {
     margin-left: 12px;
   }
 
   .titlebar-opacity {
+    display: flex;
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: none;
+    margin-left: 12px;
+  }
+
+  .titlebar-opacity-slider,
+  .titlebar-opacity > output {
     display: none;
+  }
+
+  .opacity-stepper {
+    display: flex;
   }
 }
 

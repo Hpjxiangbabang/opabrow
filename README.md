@@ -14,7 +14,7 @@
   <a href="https://github.com/Hpjxiangbabang/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 license" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="Cross-platform" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/version-1.1.2-2EA44F?style=flat-square" alt="v1.1.2" />
+  <img src="https://img.shields.io/badge/version-1.1.3-2EA44F?style=flat-square" alt="v1.1.3" />
 </p>
 
 <p align="center">
@@ -168,6 +168,9 @@ Bug reports, design feedback and focused pull requests are welcome. Please read 
   are all redirected to `FloatPane-data/` next to the executable, so they follow the chosen install
   location and are removed by the uninstaller (`build/installer.nsh`). View / tray menu -> Data
   management to open the folder or clear caches and cookies. Downloads stay in the OS Downloads folder.
+- **Opacity control (v1.1.3)**: a slider on wide windows, automatically replaced by a
+  rounded-triangle stepper with a percentage readout on narrow ones. The arrows are inline SVG
+  using `currentColor`, so they follow the light/dark theme without any external assets.
 - **Tabs (v1.1.2)**: a Tabs menu alongside Edit / Browse / History, listing all open tabs (radio
   switch), a separator, and New Tab / Close Current Tab. No visible tab strip to keep the overlay
   minimal; tabs are restored on restart. Settings, home page and history now persist in a stable

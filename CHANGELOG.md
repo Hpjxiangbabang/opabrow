@@ -3,6 +3,36 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有版本基于 MPL-2.0 继续开源，
 源码仓库：<https://github.com/Hpjxiangbabang/opabrow>。
 
+## [1.1.3] - 2026-11-07
+
+修复 v1.1.2 用户实测反馈。问题记录、调研与方案对比见 [TESTING.md](TESTING.md)。
+
+### 变更
+- **T-09**：托盘一级「退出 FloatPane」精简为「退出」，收窄右键菜单宽度；macOS 应用菜单同步。
+- **T-10**：移除托盘一级的「防止被截图 / 录屏 / 共享屏幕捕获」副本，归位「视图」二级菜单
+  （该项本就存在于视图菜单，一级重复导致菜单过长）。
+- **T-11 透明度控件响应式双方案**：宽度足够保留拖动条；`≤760px` 切换为
+  「圆角三角箭头 + 百分比数值」步进器，共用同一 `opacity` 状态。
+  箭头为内联 SVG `polygon` + `stroke-linejoin="round"` + `currentColor`，
+  自动跟随 `--ui-fg` 深浅主题，无需外部素材、无版权与缓存负担。
+  依据成熟设计补充了数值标签（纯左右箭头缺少当前值反馈）与 `aria-label` / 边界禁用。
+- **T-12 防捕获结论修正与菜单脱敏**：上一轮将「`BrowserWindow.setContentProtection`
+  不覆盖原生托盘菜单」误述为「Electron 无法保护托盘 UI」。准确机制是
+  Windows `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` / macOS
+  `NSWindowSharingNone` 按窗口授予，原生菜单窗口只是没被该 API 传入 —— 属
+  API 覆盖范围问题，可用工程手段解决。调研了三条路径（A 原生 FFI 覆盖菜单窗口、
+  B 自绘受保护菜单窗口、C 数据脱敏），本版本落地 **C**：防捕获开启时，收藏 / 历史 /
+  下载 / 密码菜单替换为占位项，标签项只显示序号，不再把用户数据交给系统渲染。
+  A / B 属架构级改动（原生依赖或替换托盘交互模型），会改变菜单体验，
+  待确认方向后再实施。托盘图标本身由系统 Shell 渲染，A / B 均覆盖不到，
+  且仅托盘模式下必须保持可见。
+
+### 限制
+- 已通过 typecheck / 18 项单测 / build / Windows 打包；**尚未做 GUI 交互实测**，
+  菜单宽度、窄窗口步进器、脱敏表现需按 `TESTING.md` 人工验收。
+- 菜单脱敏保护的是数据，不是菜单窗口像素；若要让托盘菜单窗口本身免于被捕获，
+  需采用 T-12 中的方案 A 或 B。
+
 ## [1.1.2] - 2026-11-06
 
 修复 v1.1.1 用户实测反馈。问题记录、调研与验收方式见 [TESTING.md](TESTING.md)。
@@ -97,6 +127,7 @@
 
 上游 `ClaytonPetrosian/opabrow` 的零改动快照（提交 `4bab39e`）。功能与变更见上游仓库。
 
+[1.1.3]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.3
 [1.1.2]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.2
 [1.1.1]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.0

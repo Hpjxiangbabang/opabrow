@@ -11,6 +11,30 @@ const HOME_URL_STORAGE_KEY = 'opabrow.home-url';
 const HISTORY_LIMIT = 100;
 const ADDRESS_SUGGESTION_LIMIT = 5;
 
+// 圆角三角箭头：内联 SVG + currentColor，自动跟随 --ui-fg 深浅主题，
+// 无需外部图片素材、无版权问题、不产生缓存文件。
+// stroke-linejoin / stroke-linecap="round" 让三角的三个尖角变圆。
+function RoundedTriangle({ direction }: { direction: 'left' | 'right' }) {
+  return (
+    <svg
+      viewBox="0 0 12 16"
+      width="11"
+      height="14"
+      aria-hidden="true"
+      style={{ transform: direction === 'right' ? 'rotate(180deg)' : undefined }}
+    >
+      <polygon
+        points="9,3 3.5,8 9,13"
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 // T-02: 平台感知的快捷键标签与标题栏布局。
 // 菜单 accelerator 用 CmdOrCtrl（Electron 会按平台显示），渲染层 tooltip 需自行格式化。
 const platformName =
@@ -182,6 +206,10 @@ function App() {
   const [currentUrl, setCurrentUrl] = useState(readHomeUrl);
   const [showQuickBar, setShowQuickBar] = useState(false);
   const [opacity, setOpacity] = useState(1.0);
+  // 窄窗口下用步进按钮替代滑块，与拖动条共用同一个 opacity 状态。
+  const adjustOpacity = (delta: number): void => {
+    setOpacity((value) => Math.min(1, Math.max(0.1, Math.round((value + delta) * 100) / 100)));
+  };
   const [onTop, setOnTop] = useState(false);
   const [mobileMode, setMobileMode] = useState(false);
   const [bilibiliWebFullscreen, setBilibiliWebFullscreen] = useState(true);
@@ -1372,6 +1400,29 @@ function App() {
             onChange={(event) => setOpacity(parseFloat(event.target.value))}
           />
           <output>{Math.round(opacity * 100)}%</output>
+          <div className="opacity-stepper">
+            <button
+              type="button"
+              className="opacity-step"
+              aria-label="降低透明度"
+              title="降低透明度"
+              disabled={opacity <= 0.1}
+              onClick={() => adjustOpacity(-0.1)}
+            >
+              <RoundedTriangle direction="left" />
+            </button>
+            <span className="opacity-stepper-value">{Math.round(opacity * 100)}%</span>
+            <button
+              type="button"
+              className="opacity-step"
+              aria-label="提高透明度"
+              title="提高透明度"
+              disabled={opacity >= 1}
+              onClick={() => adjustOpacity(0.1)}
+            >
+              <RoundedTriangle direction="right" />
+            </button>
+          </div>
         </div>
       </div>
 

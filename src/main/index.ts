@@ -971,7 +971,7 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
       { role: 'hideOthers', label: '隐藏其他' },
       { role: 'unhide', label: '显示全部' },
       { type: 'separator' },
-      { role: 'quit', label: '退出 FloatPane' }
+      { role: 'quit', label: '退出' }
     ]
   };
 
@@ -1384,7 +1384,9 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
     label: '标签',
     submenu: [
       ...tabList.map((tab, index) => ({
-        label: tabMenuLabel(tab, index),
+        // 原生菜单窗口不受 setContentProtection 覆盖；防捕获开启时不把页面标题
+        // / URL 送进菜单，只保留序号，功能不减但消除数据泄露面。
+        label: contentProtectionEnabled ? `标签 ${index + 1}` : tabMenuLabel(tab, index),
         type: 'radio' as const,
         checked: tab.id === activeTabId,
         click: () => switchTab(tab.id)
@@ -1404,28 +1406,34 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
     ]
   };
 
-  // 托盘右键一级：防截屏开关（与视图菜单共享状态）+ 退出。
+  // 托盘右键一级只保留「退出」（v1.1.3：标签精简为两字以收窄菜单宽度；
+  // 防截屏开关已归位到「视图」二级菜单，避免一级菜单过长）。
   // 退出位于最底部并用分隔线隔离，降低误触概率。
   const trayQuickActions: MenuItemConstructorOptions[] = isMac
     ? []
     : [
         { type: 'separator' },
         {
-          label: '防止被截图 / 录屏 / 共享屏幕捕获',
-          type: 'checkbox',
-          checked: contentProtectionEnabled,
-          click: (menuItem) => applyContentProtection(menuItem.checked)
-        },
-        { type: 'separator' },
-        {
-          label: '退出 FloatPane',
+          label: '退出',
           click: () => void requestQuit()
         }
       ];
 
+  // 防捕获开启时，把含用户数据的四个菜单替换为占位项（菜单脱敏）。
+  // 这是数据层防护：原生菜单窗口由系统渲染，无法用 BrowserWindow.setContentProtection
+  // 排除在捕获之外，因此不把书签 / 历史 / 下载文件名 / 密码条目交给系统渲染。
+  const redacted = (label: string): MenuItemConstructorOptions => ({
+    label,
+    submenu: [{ label: '内容已隐藏（防捕获已开启）', enabled: false }]
+  });
+  const safeBookmarksMenu = contentProtectionEnabled ? redacted('收藏') : bookmarksMenu;
+  const safeHistoryMenu = contentProtectionEnabled ? redacted('历史') : historyMenu;
+  const safeDownloadsMenu = contentProtectionEnabled ? redacted('下载') : downloadsMenu;
+  const safePasswordsMenu = contentProtectionEnabled ? redacted('密码') : passwordsMenu;
+
   const template: MenuItemConstructorOptions[] = isMac
-    ? [appMenu, editMenu, browseMenu, tabsMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, windowMenu]
-    : [editMenu, browseMenu, tabsMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, trayWindowMenu, ...trayQuickActions];
+    ? [appMenu, editMenu, browseMenu, tabsMenu, safeHistoryMenu, safeDownloadsMenu, safeBookmarksMenu, safePasswordsMenu, viewMenu, windowMenu]
+    : [editMenu, browseMenu, tabsMenu, safeHistoryMenu, safeDownloadsMenu, safeBookmarksMenu, safePasswordsMenu, viewMenu, trayWindowMenu, ...trayQuickActions];
 
   return Menu.buildFromTemplate(template);
 }
