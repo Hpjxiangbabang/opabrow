@@ -5,6 +5,8 @@ directories:
   buildResources: build
   output: dist
 files:
+  # 内部文档只保留在本地 docs/，绝不随安装包分发（app.asar）。
+  - '!docs/**'
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'

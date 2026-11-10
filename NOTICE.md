@@ -18,7 +18,7 @@ Modifications made on 2026-11-06 (releases v1.1.0 through v1.1.6):
 - v1.1.1 fixes from user testing: installer appends a product subdirectory to any chosen
   install path; platform-aware shortcut labels and title bar button placement; title bar and
   address bar now follow the light/dark theme; always-on-top is fully interactive by default,
-  with an optional cursor-driven auto click-through mode. New module: `TESTING.md`.
+  with an optional cursor-driven auto click-through mode.
 - Release gating: publishing now requires a manual `workflow_dispatch` run with a verified tag.
 - v1.1.2: fixed settings persistence (immediate writes, stable data directory, upgrade-safe
   uninstall), tray-level Quit with accidental-click protection, tray-level capture protection

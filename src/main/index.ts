@@ -662,7 +662,7 @@ function createMainWindow(sessionState: AppSession): BrowserWindow {
   return win;
 }
 
-// 控制窗口交互状态（v1.1.1，见 TESTING.md 的 T-04 决策）。
+// 控制窗口交互状态（v1.1.1：置顶与点击穿透解耦）。
 // - 默认 clickThroughEnabled=false：置顶只是置顶，窗口始终完全可交互。
 // - 开启「鼠标移出窗口时自动穿透」后：光标在窗口矩形内 -> 完全可交互；
 //   移出窗口 -> setIgnoreMouseEvents(true)，事件落到下层应用。
