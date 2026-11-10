@@ -4,181 +4,164 @@
 
 <h1 align="center">FloatPane</h1>
 
-<p align="center"><strong>The transparent floating browser for macOS, Windows and Linux.</strong></p>
+<p align="center"><strong>A transparent floating browser: keep one page close without giving up your desktop.</strong></p>
 
 <p align="center">
   <strong>English</strong> · <a href="./README.zh-CN.md">简体中文</a> · <a href="./README.ja.md">日本語</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Hpjxiangbabang/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 license" /></a>
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="Cross-platform" />
-  <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0" /></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-111827?style=flat-square" alt="Platforms" />
+  <img src="https://img.shields.io/badge/runtime-Electron%2043-47848F?style=flat-square&logo=electron" alt="Electron 43" />
   <img src="https://img.shields.io/badge/version-1.1.5-2EA44F?style=flat-square" alt="v1.1.5" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/Hpjxiangbabang/opabrow/releases/latest"><img src="https://img.shields.io/badge/download-latest%20release-3B82F6?style=for-the-badge" alt="Download" /></a>
-  <a href="https://hpjxiangbabang.github.io/opabrow/"><img src="https://img.shields.io/badge/website-landing%20page-111827?style=for-the-badge" alt="Website" /></a>
+  <a href="https://github.com/Hpjxiangbabang/opabrow">Source</a> ·
+  <a href="https://github.com/Hpjxiangbabang/opabrow/releases">Releases</a> ·
+  <a href="https://hpjxiangbabang.github.io/opabrow/">Landing page</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 <p align="center">
-  Your tasteful workday browser for quick detours, side quests, and pages worth keeping nearby.
+  <img src="./site/assets/opabrow-demo.gif" width="760" alt="FloatPane floating window in use" />
 </p>
 
-<p align="center">
-  <img src="./site/assets/opabrow-demo.gif" width="800" alt="FloatPane floating browser in action" />
-</p>
+> FloatPane is an open-source derivative: [ClaytonPetrosian/opabrow](https://github.com/ClaytonPetrosian/opabrow) → fork [Hpjxiangbabang/opabrow](https://github.com/Hpjxiangbabang/opabrow) → source-level customization and rebranding. Full attribution in [Credits & origin](#credits--origin).
 
-## Why FloatPane
+## What it is
 
-Most browser windows ask for a whole workspace. FloatPane is the lightweight "fish-at-work" browser for the page you want nearby: a reference, a live dashboard, a playlist, a Bilibili video, or a small task that should remain accessible while you work elsewhere. It stays quietly on the edge of your desktop instead of taking it over.
+Most browsers ask for a whole workspace. FloatPane gives a single page a small, always-available place at the edge of the screen — a reference document, a live dashboard, a playlist, a video — while you keep working in another application. The frameless transparent window reveals its own 32px title bar only when the pointer reaches the top edge, so showing the controls never covers or reflows the page.
 
-The title bar stays transparent until the pointer reaches the top edge. It has its own 32px strip, so revealing the controls never covers or shifts the webpage below.
-
-| Stay out of the way | Get there quickly |
+| | |
 | --- | --- |
-| Frameless, transparent window with hover-revealed controls | Address bar, local history suggestions, back, forward, reload and home |
-| Adjustable opacity and optional always-on-top behavior | Mobile user-agent mode for checking responsive sites |
-| Local-first history, bookmarks and passwords with no account or cloud sync | Native macOS menu commands and familiar keyboard shortcuts |
+| **Floating by design** | Frameless transparent window, hover-revealed controls, adjustable opacity, optional always-on-top and tray-only mode |
+| **Local-first** | History, bookmarks, passwords, tabs and settings stay on this machine; no account, no telemetry, no cloud sync |
+| **Privacy controls** | Explicit light / dark / system theme, optional screen-capture protection, one consolidated data directory |
 
-## Download
+Current version: **v1.1.5** (2026-11-10). Development and hands-on validation are concentrated on **Windows x64**; macOS and Linux build targets exist but have not been validated to the same extent.
 
-[Download the latest release](https://github.com/Hpjxiangbabang/opabrow/releases/latest) for macOS, Windows or Linux. Each release includes installers for:
+## Features
 
-- macOS Apple Silicon (`arm64`) and Intel (`x64`)
-- Windows x64 (`.exe` installer)
-- Linux x64 (`.AppImage`)
+### Window and appearance
 
-### macOS installation
+- **Transparent overlay** — frameless window with a 32px title bar that appears on hover; the webview always starts below it.
+- **Opacity control** — slider on wide windows, automatically replaced by a rounded-triangle stepper with a percentage readout at widths of 760px or less; arrows are inline SVG using `currentColor`, so they follow the active theme without external assets.
+- **Always-on-top** — fully interactive by default. Optionally enable "auto click-through when the cursor leaves the window": the pointer is interactive inside the window, while clicks and scrolling outside it pass through to the application below (main-process cursor polling, ~40ms).
+- **Tray-only mode** — hides the window from the taskbar; minimize and close become hide; the tray icon or menu restores it. "Quit" in the tray menu is the real exit.
+- **Explicit theme** — Light / Dark / Follow system, **Light by default**. Applied to the app UI via CSS variables and to web content via CDP `Emulation.setEmulatedMedia`. The choice persists.
 
-Starting with the next signed macOS release, packages are signed with a Developer ID and notarized by Apple. Open the downloaded DMG, drag **FloatPane** to **Applications**, then launch it normally. No Terminal command is required.
+### Browsing
 
-The existing `v0.3.0` macOS assets predate this release pipeline and will be replaced by a signed release.
+- Compact address bar with up to five local-history suggestions, drag-resizable, plus back / forward / reload / home and a custom home page.
+- **Tabs through the menu**, without a visible tab strip: the Tabs menu lists open tabs for switching, and new / close actions are one click away. Tabs are restored on restart (limit 20).
+- Page find, command panel, mobile user-agent mode, right-click menu, download progress and session restore (last page, window geometry, opacity, always-on-top, mobile mode).
+- Local history (100 entries), bookmarks with Chrome / Safari / HTML import, and automatic web-fullscreen for Bilibili video pages (can be disabled).
+- Update checks read `update-source.json` in the data directory, so the GitHub / GitLab source can be changed without recompiling; the default points at this fork.
 
-## Get started
+### Screen-capture protection
 
-### Requirements
+Toggled from View / tray menu, backed by `BrowserWindow.setContentProtection` (Windows: `WDA_EXCLUDEFROMCAPTURE`; macOS: `NSWindowSharingNone`). Since v1.1.4, when protection is enabled on Windows the native tray context menu is replaced by an application-owned, equally protected `BrowserWindow` (`src/main/protectedTrayMenu.ts`), so the menu itself is excluded from capture as well. The v1.1.3 approach of redacting menu data was reverted. macOS keeps its native menu.
 
-- macOS
-- Node.js 22 or later
-- pnpm (version pinned by `packageManager` in package.json; corepack enables it automatically)
+### Data handling
 
-### Run locally
+- `src/main/dataPaths.ts` redirects `userData`, session data, cache, temp, crash dumps and logs into a single directory: `<appData>/FloatPane-data/` by default, or the path given in `FLOATPANE_DATA_DIR`. Since v1.1.2 this location is independent of the install directory, so upgrades do not lose settings; old portable data is migrated once.
+- View / tray → **Data management**: open the data directory, clear cache and cookies. The Windows uninstaller removes the directory only when its `.floatpane-data` marker is present; an explicit custom directory stays under your control.
+- Passwords are encrypted with the OS keystore through Electron `safeStorage`, imported only from a Chrome-exported CSV you explicitly choose, and filled **only on your command** at a matching HTTPS origin — never automatically, never uploaded.
+- Downloaded files remain in the OS Downloads folder and are never removed by the uninstaller.
+
+## Keyboard shortcuts
+
+Shortcuts use `CmdOrCtrl`: **Ctrl** on Windows / Linux, **⌘** on macOS.
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl/⌘+L` | Focus the address bar |
+| `Ctrl/⌘+F` · `Ctrl/⌘+G` · `Ctrl/⌘+Shift+G` | Find in page · next · previous |
+| `Ctrl/⌘+[` · `Ctrl/⌘+]` · `Ctrl/⌘+R` | Back · forward · reload |
+| `Ctrl/⌘+Shift+H` | Open the home page |
+| `Ctrl/⌘+D` | Add / remove the current bookmark |
+| `Ctrl/⌘+Shift+Y` · `Ctrl/⌘+Shift+J` | Show history · show downloads |
+| `Ctrl/⌘+Shift+P` | Fill the current page from a saved password |
+| `Ctrl/⌘+T` · `Ctrl/⌘+=` · `Ctrl/⌘+-` | Toggle always-on-top · increase / decrease opacity |
+| `Ctrl/⌘+K` · `Ctrl/⌘+Shift+Space` | Command panel · show / hide window |
+| `Ctrl/⌘+Shift+T` · `Ctrl/⌘+Shift+W` | New tab · close current tab |
+| `Ctrl/⌘+W` | Close window (hides it in tray-only mode) |
+
+## Getting the app
+
+Installers are distributed through [GitHub Releases](https://github.com/Hpjxiangbabang/opabrow/releases). Publishing is deliberately gated: the release workflow only runs on manual `workflow_dispatch` with a verified tag, so pushing a tag does **not** create a release. If no asset is listed for a version, build it from source as described below. Every binary corresponds to a tagged source state in this repository (MPL-2.0 §3.2(a)).
+
+| Platform | Artifact | Notes |
+| --- | --- | --- |
+| Windows x64 | `FloatPane-Setup-<version>-x64.exe` (NSIS) | Multi-step wizard with a selectable install directory; portable ZIP builds are also produced for some versions and leave no registry entries |
+| macOS arm64 / x64 | `.dmg` | Unsigned and not notarized; Gatekeeper requires manual approval on first launch |
+| Linux x64 | `.AppImage` | Place anywhere; no installer |
+
+**All binaries are unsigned.** Windows SmartScreen / Smart App Control and macOS Gatekeeper may warn or block an unsigned app; a portable ZIP can be used to isolate installer-related issues. Removing that warning requires a valid Authenticode or Developer ID certificate. Only Windows x64 is covered by the installers; ARM64 Windows is not.
+
+## Build from source
+
+Requirements: Node.js 22 or later, pnpm 12.18.0 (pinned by `packageManager`, enabled through corepack), Electron 43.
 
 ```bash
 git clone https://github.com/Hpjxiangbabang/opabrow.git
 cd opabrow
-pnpm install
+corepack enable
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-### Build
-
 ```bash
-pnpm build
-pnpm build:mac
+pnpm typecheck                 # node + web TypeScript checks
+pnpm test                     # Vitest: 18 tests across 4 logic modules
+pnpm build                    # out/main, out/preload, out/renderer
+pnpm package:win:x64          # or package:mac:arm64 / package:mac:x64 / package:linux:x64
 ```
 
-## A small browser, with the useful parts
+Stack: Electron 43 + React 19 + TypeScript 5 + electron-vite 5 / Vite 7 + electron-builder 26 + Vitest 4 + pnpm. The main process owns windows, menus, tray, IPC and local storage; the preload exposes `window.opabrow` through `contextBridge`; the renderer owns the title bar and address bar. Runtime dependencies are limited to `csv-parse`, `lucide-react` and `parse5`. There is no server, account system, license check or telemetry.
 
-### Address bar and history
+## Known limitations
 
-Move the pointer to the top edge or press `Cmd+L`. When idle, the address is a compact, text-sized target, leaving the rest of the title bar free for dragging. Once focused, it expands for editing and accepts standard copy, cut and paste shortcuts.
+- **Capture protection is best-effort.** It removes the window from software screenshots, recording and screen sharing on supported platforms; it cannot stop a physical camera, a capture card or privileged capture tools. Linux support is limited. The tray icon is rendered by the OS shell and cannot be protected. The self-drawn Windows menu loses native appearance, keyboard navigation and accessibility, and needs manual GUI verification.
+- **No plugin system.** There is no extension API, SDK or configuration-driven extension point: customization means editing the source and rebuilding. `src/main/index.ts` and `src/renderer/src/App.tsx` are large single files, which makes merging upstream changes costly.
+- **Unsigned binaries**, as described above.
+- **Test coverage is narrow.** Automated tests cover four logic modules (18 cases); there is no UI or main-process end-to-end suite. Menu and installer behaviour is tracked in [TESTING.md](TESTING.md) and still requires manual verification. The NSIS multi-user install mode issue (T-15) is diagnosed but unresolved pending a decision.
+- **Anti-detection is out of scope.** Evading detection by third-party meeting software is deliberately not implemented.
+- Validation is Windows-centric; macOS and Linux builds are produced by CI configuration but have not received equivalent hands-on testing.
 
-As you type, FloatPane suggests up to five matching pages from the local navigation history. Suggestions place the page title first and the URL second; use the arrow keys to choose a result, then press `Enter`.
+## Project documents
 
-Open **History > Show history** or press `Cmd+Shift+Y` to search, reopen, or clear recent pages. The **History** menu also keeps the ten most recent pages one click away. FloatPane stores up to 100 history entries locally on this Mac; it has no account or cloud history sync.
-
-The default home page is the FloatPane project repository. In the **Browse** menu, choose **Set current page as home** to make any visited page your local home page, or **Restore project home** to reset it.
-
-### Bilibili video pages
-
-Opening a Bilibili video or Bangumi playback page automatically switches the player to its web fullscreen mode. The video fills the available page area while staying inside the FloatPane window.
-
-### Find, restore, and download
-
-Press `Cmd+F` to search the current page. `Cmd+G` and `Cmd+Shift+G` move through matches without leaving the floating window.
-
-FloatPane restores the latest page, window position and size, opacity, always-on-top setting, and mobile mode after relaunch. Downloads go to the standard Downloads folder. Open **Downloads** or press `Cmd+Shift+J` to follow progress, see failures, and reveal completed files in Finder. Recent download state stays local to this Mac.
-
-When the window is always on top, click-through is enabled by default: pointer clicks and scrolling go to the application below. Turn it off from **View > Click through when always on top** whenever you need to interact with the floating page.
-
-### Bookmarks and browser import
-
-The macOS **Bookmarks** menu keeps bookmarks out of the browsing surface. Press `Cmd+D` to add or remove the current page, then open nested folders directly from the menu. Import bookmarks from local Chrome or Safari profiles, or choose a standard exported HTML bookmark file. Bookmark data stays on this Mac in FloatPane's application data folder.
-
-### Password migration and fill
-
-Move saved logins from Chrome deliberately: export a password CSV from Chrome Password Manager, then choose **Passwords > Import Chrome password CSV…** in FloatPane. The CSV is read only after you choose it and confirm the warning. Passwords are encrypted with the macOS Keychain before they are written to FloatPane's local application data; FloatPane never reads Chrome's internal password database, sends passwords to a server, or syncs them to a cloud service.
-
-At a matching HTTPS origin, choose **Passwords > Fill current page** or press `Cmd+Shift+P`. FloatPane never fills credentials automatically on page load. When several accounts match, it asks you to select an account first. The original exported CSV remains under your control, so remove it once you no longer need it.
-
-### Window controls that do not steal space
-
-The close and minimize controls appear smoothly on hover. The webview always starts below the title bar, so showing the controls does not overlap the page or change its layout.
-
-### Desktop and mobile mode
-
-Switch to a mobile user agent from the macOS menu to inspect a site's responsive experience, then switch back without losing the current page.
-
-## Keyboard shortcuts
-
-| Shortcut | Action |
+| File | Contents |
 | --- | --- |
-| `Cmd+L` | Focus the address bar |
-| `Cmd+[` / `Cmd+]` | Back / forward |
-| `Cmd+R` | Reload |
-| `Cmd+Shift+H` | Open the home page |
-| `Cmd+T` | Toggle always-on-top |
-| `Cmd+=` / `Cmd+-` | Adjust window opacity |
-| `Cmd+K` | Open the command panel |
-| `Cmd+D` | Add or remove the current page from bookmarks |
-| `Cmd+Shift+P` | Fill the current page from a saved password |
+| [CHANGELOG.md](CHANGELOG.md) | Version history from the upstream baseline to v1.1.5 |
+| [TESTING.md](TESTING.md) | User test findings, investigations, acceptance steps and known issues |
+| [TODO.md](TODO.md) | Backlog and direction |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guidance before opening a pull request |
+| [SECURITY.md](SECURITY.md) | Private vulnerability reporting |
+| [NOTICE.md](NOTICE.md) | Upstream attribution and modification log |
+| [LICENSE](LICENSE) | Full text of MPL-2.0 |
+| [site/](site/) | Trilingual landing pages |
 
-## Development
+## Credits & origin
 
-```bash
-pnpm typecheck
-pnpm build
-```
+FloatPane is **not an original codebase**. It is a source-level derivative, and the fork chain is:
 
-The project is an Electron + React application. The Electron main process manages the native window and macOS menu; the renderer owns the title bar, address bar, local history and webview interaction.
+| Stage | Repository | Details |
+| --- | --- | --- |
+| **Upstream project** | [ClaytonPetrosian/opabrow](https://github.com/ClaytonPetrosian/opabrow) by Clayton Petrosian | Released under MPL-2.0. Baseline is commit `4bab39e` (upstream v1.0.0). |
+| **This fork** | [Hpjxiangbabang/opabrow](https://github.com/Hpjxiangbabang/opabrow) | The maintainer forked the upstream repository on 2026-11-06 as a zero-change snapshot. The GitHub fork relationship is retained, which is why the repository URL still contains `opabrow`. |
+| **This product** | **FloatPane** (this repository, `main`) | Source-level customization of that fork from v1.1.0 onward, with its own name, `appId` (`com.floatpane.app`), icons and artwork. |
 
-## Roadmap
+**Why the rename.** MPL-2.0 §2.3 does not grant rights to the contributor's trademarks, service marks or logos. The derivative therefore uses an independent name and original artwork rather than the upstream brand.
 
-The free core focuses on a polished floating browsing experience. Future Pro experiments may add workspaces, profiles, optional sync and automation without removing the local-first core.
+**What was added in this fork** (since 2026-11-06, v1.1.0 → v1.1.5): rebranding and hardcoded-link cleanup, pinned pnpm version, selectable NSIS install directory, explicit theme, screen-capture protection (including the protected self-drawn tray menu on Windows), a unified and upgrade-safe data directory, tray-only mode, real multi-tab support, settings persistence fixes, responsive opacity control, and a manual release gate. The complete, version-by-version list is in [CHANGELOG.md](CHANGELOG.md) and [NOTICE.md](NOTICE.md).
 
-## Contributing
+**License compliance.** The full [LICENSE](LICENSE) and all upstream copyright notices are retained; modified MPL-covered files remain under MPL-2.0 (§3.1) and no notices were removed (§3.4). Source for every distributed binary is available in this repository at the matching tag (§3.2(a)). The original, unmodified source remains available at the upstream repository.
 
-Bug reports, design feedback and focused pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
-
-## Additions in this fork
-
-- **Choose install location**: the Windows installer now uses a multi-step wizard; macOS DMG and
-  Linux AppImage are portable by design.
-- **Explicit theme**: View / tray menu -> Appearance -> Light / Dark / System. Defaults to Light
-  instead of following the OS. The choice persists and is applied to both the app UI and web pages
-  via an emulated `prefers-color-scheme`.
-- **Screen-capture protection**: View / tray menu toggle backed by
-  `BrowserWindow.setContentProtection`. It cannot stop physical cameras, capture cards, or
-  privileged capture tools; Linux support is limited.
-
-- **Single data directory**: `userData`, session data, caches, cookies, temp files, crash dumps and logs
-  are all redirected to `FloatPane-data/` next to the executable, so they follow the chosen install
-  location and are removed by the uninstaller (`build/installer.nsh`). View / tray menu -> Data
-  management to open the folder or clear caches and cookies. Downloads stay in the OS Downloads folder.
-- **Opacity control (v1.1.3)**: a slider on wide windows, automatically replaced by a
-  rounded-triangle stepper with a percentage readout on narrow ones. The arrows are inline SVG
-  using `currentColor`, so they follow the light/dark theme without any external assets.
-- **Tabs (v1.1.2)**: a Tabs menu alongside Edit / Browse / History, listing all open tabs (radio
-  switch), a separator, and New Tab / Close Current Tab. No visible tab strip to keep the overlay
-  minimal; tabs are restored on restart. Settings, home page and history now persist in a stable
-  data directory and survive upgrades.
-- **Always-on-top interaction (v1.1.1)**: pinning stays fully interactive by default; optionally enable "auto click-through when the cursor leaves the window" from the View / tray menu. Rationale in `TESTING.md`.
-- **Tray-only mode**: hides the window from the taskbar; minimize and close become hide, and the window
-  is restored from the tray. The tray menu's Quit is the real exit. The setting persists.
+**Thanks** to Clayton Petrosian and the upstream contributors for releasing opabrow under MPL-2.0, which made this derivative possible; and to the maintainers of Electron, React, TypeScript, Vite, electron-vite, electron-builder, Vitest, pnpm, `csv-parse`, `lucide-react` and `parse5`.
 
 ## License
 
-FloatPane is released under the [Mozilla Public License 2.0](LICENSE).
+Released under the [Mozilla Public License 2.0](LICENSE). See [NOTICE.md](NOTICE.md) for the upstream attribution and the list of modifications. The FloatPane name and artwork are independent of the upstream project's branding.
