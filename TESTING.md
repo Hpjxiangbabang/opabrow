@@ -451,3 +451,34 @@ T-14 末尾记录的场景细节清单不再索要，相关调研与边界说明
 1. 开启防捕获后右键托盘：菜单最后一项「退出」完整可见，点击可用；标签很多时菜单不超出屏幕。
 2. 菜单周围无灰边 / 阴影，深浅主题下背景与文字清晰。
 3. 安装器方案确认后，按所选方案重新验证：模式切换、目录页路径、「上一步」不退出。
+
+---
+
+## T-15 补充：方案 C 的技术约束核查与回滚（2026-11-10）
+
+用户选择「C. 保留双模式并修路径传递」后进行了实现尝试，核查发现 electron-builder
+NSIS 模板存在硬约束，**该方案无法通过常规配置达成**：
+
+| 核查项 | 结果 |
+| --- | --- |
+| 安装器执行级别来源 | `installer.nsi:20-28`：`!ifdef INSTALL_MODE_PER_ALL_USERS` 时 `RequestExecutionLevel admin`，否则 `user` |
+| 定义 `INSTALL_MODE_PER_ALL_USERS` | 安装器变 admin，但 `assistedInstaller.nsh:18` 会跳过 `PAGE_INSTALL_MODE`，**双模式选择页消失**，退化为方案 B |
+| 不定义该宏 | 保留双模式，但安装器 `asInvoker`；选择「为全部人安装」必然触发 `UAC_RunElevated + Quit`，跨进程丢 `$INSTDIR` |
+| `win.requestedExecutionLevel` | **只作用于应用 exe 的 manifest，对 NSIS 安装器无效**。实测把 `FloatPane.exe` 改为 `requireAdministrator`（每次启动弹 UAC），安装器仍是 `asInvoker` —— 属于有害副作用 |
+| `MUI_PAGE_CUSTOMFUNCTION_LEAVE` 恢复路径 | UAC 提权分支里 `Abort` 使模式页 LEAVE 末尾的 `MUI_PAGE_FUNCTION_CUSTOM LEAVE` 不执行，钩子无效；且该 define 的页面消费顺序依赖模板，不可靠 |
+
+**处置**：已完整回滚 `build/installer.nsh` 与 `electron-builder.yml` 的尝试性改动，
+重新打包恢复干净的 v1.1.5 产物。复核结果：应用 exe manifest 恢复 `asInvoker`、
+安装器 `asInvoker`、`git status` 无未提交改动。已重新生成安装包与便携版：
+
+- `FloatPane-Setup-1.1.5-x64.exe` 108,194,035 B，SHA-256 `348d7095…`
+- `FloatPane-1.1.5-win-x64-portable.zip` 149,773,284 B，SHA-256 `7f7a7dd9…`
+
+**方案 C 真正可行的路径**：通过 `nsis.script` 提供自定义 `installer.nsi`
+（复制模板，把 `RequestExecutionLevel user` 改为 `admin` 并保留 `PAGE_INSTALL_MODE`），
+再配合页面钩子在 `setInstallModePer*` 之后恢复 `$INSTDIR`。
+代价：需维护一份模板副本（electron-builder 升级要同步）、改动 NSIS 编译层、
+且**必须人工安装实测**，静态检查无法验证运行时行为。
+
+**需用户重新决策**：A 固定当前用户 / B 固定所有用户 / C′ 自定义 NSIS 脚本 / 暂不修保留已知问题。
+在确认前不再改动安装配置。
