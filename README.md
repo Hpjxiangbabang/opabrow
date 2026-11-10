@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="./site/assets/opabrow-demo.gif" width="760" alt="FloatPane floating window in use" />
+  <img src="./site/assets/opabrow-preview.svg" width="720" alt="FloatPane interface preview" />
 </p>
 
 > FloatPane is an open-source derivative: [ClaytonPetrosian/opabrow](https://github.com/ClaytonPetrosian/opabrow) → fork [Hpjxiangbabang/opabrow](https://github.com/Hpjxiangbabang/opabrow) → source-level customization and rebranding. Full attribution in [Credits & origin](#credits--origin).
@@ -127,7 +127,7 @@ Stack: Electron 43 + React 19 + TypeScript 5 + electron-vite 5 / Vite 7 + electr
 - **Capture protection is best-effort.** It removes the window from software screenshots, recording and screen sharing on supported platforms; it cannot stop a physical camera, a capture card or privileged capture tools. Linux support is limited. The tray icon is rendered by the OS shell and cannot be protected. The self-drawn Windows menu loses native appearance, keyboard navigation and accessibility, and needs manual GUI verification.
 - **No plugin system.** There is no extension API, SDK or configuration-driven extension point: customization means editing the source and rebuilding. `src/main/index.ts` and `src/renderer/src/App.tsx` are large single files, which makes merging upstream changes costly.
 - **Unsigned binaries**, as described above.
-- **Test coverage is narrow.** Automated tests cover four logic modules (18 cases); there is no UI or main-process end-to-end suite. Menu and installer behaviour is tracked in [TESTING.md](TESTING.md) and still requires manual verification. The NSIS multi-user install mode issue (T-15) is diagnosed but unresolved pending a decision.
+- **Test coverage is narrow.** Automated tests cover four logic modules (18 cases); there is no UI or main-process end-to-end suite. Menu and installer behaviour is tracked in [TESTING.md](TESTING.md) and still requires manual verification. The NSIS multi-user install mode issue (T-15) is diagnosed and deliberately kept as a known issue: switching install modes does not carry over the chosen path and "Back" may exit the wizard. The installer configuration remains as shipped in v1.1.5.
 - **Anti-detection is out of scope.** Evading detection by third-party meeting software is deliberately not implemented.
 - Validation is Windows-centric; macOS and Linux builds are produced by CI configuration but have not received equivalent hands-on testing.
 

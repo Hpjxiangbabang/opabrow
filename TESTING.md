@@ -484,3 +484,46 @@ NSIS 模板存在硬约束，**该方案无法通过常规配置达成**：
 安装配置维持 v1.1.5 现状：双模式可用，但切换模式后目录页不沿用先前路径、
 点「上一步」可能退出。上述问题与根因已完整记录，后续需要时再按 A / B / C′ 方案处理。
 本次不再改动 `installer.nsh` / `electron-builder.yml`，产物为回滚后重新构建的干净版本。
+
+---
+
+## T-15 上游普遍性调研：是否为普遍问题、是否已有解决方案（2026-11-10）
+
+> 本轮**仅调研，不改代码或配置**。用户判断该问题可能是 electron-builder 的普遍现象，
+> 不希望单独修成重复造轮子。调研范围：官方文档、上游 GitHub issue/PR、NSIS UAC 插件文档、
+> 社区实践，以及本项目 `node_modules` 中 26.15.3 模板源码。
+
+### 结论一：是普遍问题，且是上游公开、仍在活跃维护的问题域
+
+| 证据 | 内容 |
+| --- | --- |
+| NSIS UAC 插件设计限制 | NSIS Wiki 明确："the outer/user process does not yet communicate back to the inner/admin process"。提权重启后外层状态不回传给内层，是插件级约束，非本项目独有 |
+| 官方一等配置/宏 | 文档把 `customInstallMode`（设 `$isForceMachineInstall` / `$isForceCurrentInstall`）与 `allowElevation` 列为一等自定义点，说明官方清楚双模式 + 提权的复杂度并预留规避路径 |
+| 上游 2026 年活跃修复 | PR `#10377`「skip duplicate license page after elevation」（2026-10-26 合并）专门处理提权重启后的页面重复与 **Back navigation edge case**，测试含 `directory -> license -> directory -> closed`；Issue `#10340`、`#8536`（perUser 默认时安装器不启动）、`#1961`；PR `#10085`（2026-09）明确描述 `perMachine:false` + 自定义目录导致无条件 `UAC_RunElevated`；Issue `#9765`（进行中）拟改用系统 RunAs 接口提权 |
+| 社区标准做法 | VS Code 直接拆成 User / System 两个安装包；cats-platform 等仓库用 `customInstallMode` 设 `$isForceCurrentInstall` 让模式页在绘制前 `Abort`，注释明确「always installs per-user and never prompts for elevation」；中文社区大量 `perMachine:true + allowElevation:true` 组合讨论 |
+| 版本差 | 本项目 `app-builder-lib` 26.15.3；上游最新 `electron-builder` 26.18.0（npm latest，dist-tag next）。`#10377` 修复在此时间线之后，升级可能改善提权后的页面导航 |
+
+### 结论二：已有官方解决方案，无需重复造轮子
+
+| 方案 | 官方支持 | 效果 | 代价 / 限制 |
+| --- | --- | --- | --- |
+| **① `nsis.allowElevation: false`** | 一等配置（默认 `true`，文档："If false, user will have to restart installer with elevated permissions"） | 模板 `multiUserUi.nsh:110` 在非管理员时会把「为全部人安装」单选**禁用**并标注 `(must run as admin)`；用户无法选中它，`InstallModeLeave` 的 `UAC_RunElevated + Quit` 分支就不会触发 → 无跨进程重启 → 路径不丢、「上一步」不退出。**保留双模式页，零脚本改动** | 普通用户要选全用户安装须手动以管理员重启安装器；管理员运行时切换模式仍会被 `setInstallModePer*` 重设 `$INSTDIR` |
+| **② `customInstallMode` 强制单模式** | 官方一等宏 | 设 `$isForceCurrentInstall=1`（或 `Machine`），PRE 直接 `Abort` 跳过模式页，彻底避开提权（等价此前方案 A/B） | 不再提供双模式选择 |
+| **③ `perMachine: true`** | 一等配置 | 模板定义 `INSTALL_MODE_PER_ALL_USERS` → 安装器 `RequestExecutionLevel admin`、无模式页、路径稳定 | 每次 UAC、默认落在 Program Files |
+| **④ `preInit` 写注册表 `InstallLocation`** | 官方 FAQ「How do I change the default installation directory?」 | `setInstallModePer*` 会从 HKLM/HKCU 读 `InstallLocation` 赋给 `$INSTDIR`，把用户选的目录写进去可跨模式/跨进程沿用 | 会影响 `initMultiUser` 的 `hasPerMachineInstallation` 判定与自动更新；PR `#10085` 指出 HKLM `InstallLocation` 被擦除会导致后续装错路径，需谨慎 |
+| **⑤ `nsis.script` 自定义完整脚本** | 官方支持但**明确不推荐** | 可任意改 | 文档警告："disables built-in safeguards"、"no longer generates (and signs) the uninstaller"、"skips installer size verification"、"don't expect that your issue will be resolved"；`include` is recommended |
+| **⑥ 升级上游版本** | — | `#10377` 已合并，修提权后页面重复与 Back 导航 | 不直接修 `$INSTDIR` 跨进程丢失；跨版本需回归 |
+| **⑦ 换安装器（MSI / WiX / MSIX / Squirrel）** | — | 绕开 NSIS UAC 插件 | 工程量大，各有自己的多用户/更新约束 |
+
+### 对本项目的建议（未实施）
+
+- 保持「暂不修」是合理的：官方已有一等开关，上游仍在活跃修同类问题，单独定制脚本属于重复造轮子且被官方明确不推荐。
+- 若将来要以**最低成本**缓解：优先试 **① `allowElevation: false`**——它保留双模式、零脚本、直接消除用户遇到的两个现象（都不再触发提权重启）。注意该结论来自模板源码与官方文档的静态核查，**尚未做真实安装向导实测**；且管理员场景下的路径重设仍需 ④ 配合。
+- 若愿意放弃双模式，**② 最稳**，也是社区最常见做法。
+- 自定义 `nsis.script`（原方案 C′）成本与风险最高，不建议。
+
+### 参考
+
+- electron-builder NSIS 文档：<https://www.electron.build/docs/nsis/>（v26 版含 FAQ 的 `preInit` 示例）
+- NSIS MultiUser / UAC plug-in 文档：<https://nsis.sourceforge.io/Docs/MultiUser/Readme.html>
+- 上游 PR/Issue：`#10377`、`#10340`、`#9765`、`#10085`、`#8536`、`#1961`

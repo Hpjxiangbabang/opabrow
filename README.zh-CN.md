@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="./site/assets/opabrow-demo.gif" width="760" alt="FloatPane 浮层窗口实际效果" />
+  <img src="./site/assets/opabrow-preview.svg" width="720" alt="FloatPane 界面预览" />
 </p>
 
 > FloatPane 是开源衍生项目：[ClaytonPetrosian/opabrow](https://github.com/ClaytonPetrosian/opabrow) → fork 仓库 [Hpjxiangbabang/opabrow](https://github.com/Hpjxiangbabang/opabrow) → 在该 fork 上做源码级二开并改名换标。完整来源说明见[致谢与来源](#致谢与来源)。
@@ -127,7 +127,7 @@ pnpm package:win:x64          # 或 package:mac:arm64 / package:mac:x64 / packag
 - **防捕获是尽力而为**：在受支持平台上可让软件层面的截图、录屏、共享屏幕看不到窗口；无法阻止手机拍摄、采集卡或高权限捕获工具，Linux 支持有限。托盘图标由系统 Shell 渲染，无法纳入保护；Windows 自绘菜单会失去原生外观、键盘导航与无障碍能力，且仍需人工 GUI 验收。
 - **没有插件机制**：不提供扩展 API、SDK 或配置驱动的扩展点，定制必须改源码后重新编译。`src/main/index.ts` 与 `src/renderer/src/App.tsx` 是单体大文件，合并上游更新的成本较高。
 - **二进制未签名**，详见「获取与安装」。
-- **自动化覆盖有限**：单测仅覆盖 4 个逻辑模块（18 个用例），没有 UI 或主进程的端到端测试；菜单与安装器行为记录在 [TESTING.md](TESTING.md)，仍需人工复测。NSIS 多用户安装模式问题（T-15）已定位根因，方案待确认，尚未修改安装配置。
+- **自动化覆盖有限**：单测仅覆盖 4 个逻辑模块（18 个用例），没有 UI 或主进程的端到端测试；菜单与安装器行为记录在 [TESTING.md](TESTING.md)，仍需人工复测。NSIS 多用户安装模式问题（T-15）已定位根因，**决定暂不修、保留为已知问题**：切换安装模式后目录页不沿用先前路径，点「上一步」可能直接退出；安装配置维持 v1.1.5 现状。
 - **不做反检测**：规避第三方会议软件检测的功能明确暂停，不在实现范围内。
 - 验证以 Windows 为主；macOS / Linux 由构建配置产出，但未经同等程度的实机测试。
 
