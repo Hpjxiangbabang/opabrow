@@ -256,6 +256,12 @@ const api = {
     return (): void => { ipcRenderer.removeListener('tray-only-mode-changed', handler); };
   },
 
+  // ---------- 自绘受保护托盘菜单（v1.1.4） ----------
+  protectedTrayMenu: {
+    select: (id: string): Promise<void> => ipcRenderer.invoke('protected-tray-menu:select', id),
+    dismiss: (): Promise<void> => ipcRenderer.invoke('protected-tray-menu:dismiss')
+  },
+
   // ---------- 自动更新 ----------
   updater: {
     check: (): Promise<UpdateCheckResult | null> => ipcRenderer.invoke('updater:check'),

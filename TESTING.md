@@ -346,3 +346,46 @@ C 先消除实质性风险（菜单被截屏时不再泄露任何用户数据）
   3. 新增的「突破会议软件置顶识别」功能：技术实质是规避第三方检测机制，
      需先确认可接受的技术方向与权限边界；本轮未实现。
 
+
+---
+
+## T-14 方案 B 落地与验收（v1.1.4，2026-11-10）
+
+用户确认：**主窗口防捕获没问题**；托盘菜单采用**仅防捕获时启用 + 精简菜单**的自绘受保护窗口。
+
+### 实现
+
+- 新增 `src/main/protectedTrayMenu.ts`。防捕获开启（且 `process.platform === 'win32'`）时，
+  `syncTrayMenuMode()` 执行 `tray.setContextMenu(null)`，托盘 `right-click` 改为
+  `showProtectedTrayMenu()` 弹出一个 `frame:false / transparent / skipTaskbar / alwaysOnTop`
+  的 `BrowserWindow`，并调用 `win.setContentProtection(true)`。
+- 菜单内容由主进程 `buildProtectedTrayItems()` 生成，经 `escapeHtml` 后内联为
+  `data:text/html` 页面；不加载任何外部内容，无网络依赖、不产生缓存。
+- 点击项经 preload `protectedTrayMenu.select(id)` → IPC → `handleProtectedTrayMenuAction(id)`，
+  主进程 handler 用 `isProtectedTrayMenuSender(event.sender.id)` 校验来源。
+- 关闭路径：失焦、ESC、点击任意项、`will-quit`。窗口创建阶段不响应 blur，避免立即自毁。
+- 深浅主题由 `nativeTheme.shouldUseDarkColors` 解析 `system` 后生成配色。
+- **撤销 v1.1.3 的菜单脱敏**：原生菜单恢复完整内容，标签项恢复标题显示；防捕获时
+  菜单整体落在受保护窗口内，不再需要隐藏数据。
+
+### 验收方式（人工）
+
+1. 开启「防止被截图 / 录屏 / 共享屏幕捕获」后右键托盘：出现自绘菜单，
+   用任意截图 / 录屏 / 会议共享均**看不到主窗口与托盘菜单**（两者都在捕获排除范围内）。
+2. 菜单项可用：显示/隐藏、置顶、主题切换、标签切换与新建/关闭、打开数据目录、
+   清除缓存、关闭防捕获（回到原生菜单）、退出。
+3. 菜单位置贴合托盘图标、不超出所在显示器工作区；多显示器下位置正确；
+   点击菜单外部或按 ESC 可关闭。
+4. 深浅主题下菜单配色与文字对比度正常；关闭防捕获后托盘恢复原生完整菜单。
+
+### 已知代价
+
+- 自绘菜单失去系统原生外观、键盘导航与无障碍能力；这是方案 B 的固有取舍。
+- `data:` URL 页面依赖 Electron 对该 WebContents 执行 preload；已在代码里做严格转义与
+  来源校验，但**交互仍需 GUI 实测**确认。
+
+### 暂缓项
+
+「突破会议软件置顶识别」按用户选择先收集场景细节，未实现。需用户提供：具体会议软件与版本、
+识别提示原文、出现时机（共享屏幕 / 加入会议 / 全程）、以及期望的使用场景。
+在拿到这些信息前不开发规避第三方检测的能力。

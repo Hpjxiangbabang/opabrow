@@ -3,6 +3,39 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有版本基于 MPL-2.0 继续开源，
 源码仓库：<https://github.com/Hpjxiangbabang/opabrow>。
 
+## [1.1.4] - 2026-11-10
+
+依据 v1.1.3 用户实测反馈修正 T-12 的实现方向。完整决策与验收见 [TESTING.md](TESTING.md)。
+
+### 变更
+- **撤销菜单数据脱敏（理解错误修正）**：v1.1.3 把收藏 / 历史 / 下载 / 密码菜单替换为占位项、
+  标签只显序号，保护的是「数据」而非「窗口像素」，不符合用户「通过截图 / 录屏 / 共享屏幕
+  根本捕获不到这个窗口」的诉求。本版本完全撤销脱敏，原生菜单恢复完整内容，标签恢复标题显示。
+- **主窗口防捕获保持现状**：用户确认主窗口防捕获没问题。Windows 下
+  `BrowserWindow.setContentProtection(true)` 对应 `WDA_EXCLUDEFROMCAPTURE`，软件层面的
+  截图 / 录屏 / 共享屏幕中窗口不可见，不作改动。
+- **托盘菜单改为方案 B（自绘受保护菜单窗口）**：新增 `src/main/protectedTrayMenu.ts`。
+  防捕获开启时移除原生 `tray.setContextMenu`，改由托盘 `right-click` 弹出应用自己的
+  `BrowserWindow`，该窗口同样 `setContentProtection(true)`，因此菜单本身也落在捕获排除范围内。
+  - 按用户选择：**仅防捕获开启时启用**（关闭时回到原生菜单）、**精简一级菜单**。
+  - 精简项：显示/隐藏、置顶、主题三态、标签列表（radio 可切换）、新建/关闭标签、
+    打开数据目录、清除缓存与 Cookies、防捕获开关（可关闭以退出该模式）、退出。
+    标签标题正常显示——窗口已受保护，不再需要数据脱敏。
+  - 定位基于 `Tray.getBounds()` 与所在显示器工作区；支持失焦、ESC、点击项后关闭；
+    深浅主题配色跟随 `nativeTheme`；动态文本全部 HTML 转义；页面完全自生成，不加载外部内容。
+  - 仅 Windows 启用：macOS 状态栏菜单由 AppKit 管理，保持原生行为。
+- preload 新增 `protectedTrayMenu.select/dismiss`，主进程 handler 校验请求来自菜单窗口本身；
+  `will-quit` 时销毁菜单窗口。
+
+### 已验证
+- typecheck / 18 项单测 / build / Windows 打包；T-11 透明度响应式双方案由用户实测通过。
+
+### 限制与待办
+- 自绘菜单窗口的交互（定位、失焦关闭、多显示器）**尚未做 GUI 实测**，需人工验收。
+- 失去原生菜单的系统外观、键盘导航与无障碍能力，这是方案 B 的固有代价。
+- 「突破会议软件置顶识别」按用户选择**暂缓**：技术实质是规避第三方检测机制，
+  需先明确具体软件、识别提示原文与使用场景后再判断可行边界，本版本未实现。
+
 ## [1.1.3] - 2026-11-07
 
 修复 v1.1.2 用户实测反馈。问题记录、调研与方案对比见 [TESTING.md](TESTING.md)。
@@ -137,6 +170,7 @@
 
 上游 `ClaytonPetrosian/opabrow` 的零改动快照（提交 `4bab39e`）。功能与变更见上游仓库。
 
+[1.1.4]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.4
 [1.1.3]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.3
 [1.1.2]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.2
 [1.1.1]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.1

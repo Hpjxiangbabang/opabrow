@@ -16,6 +16,14 @@ import { AppSession, DownloadEntry, SessionStore, TabEntry, ThemeMode, sanitizeS
 import { registerUpdaterIpc, startAutoUpdateCheck, stopAutoUpdateCheck } from './updater';
 // 副作用模块：必须在 app.whenReady() 之前重定向所有数据路径
 import { dataLocation } from './dataPaths';
+import {
+  TrayMenuItem,
+  destroyProtectedTrayMenu,
+  dismissProtectedTrayMenu,
+  isProtectedTrayMenuSender,
+  isProtectedTrayMenuSupported,
+  showProtectedTrayMenu
+} from './protectedTrayMenu';
 
 // ---------- 窗口引用 ----------
 let mainWindow: BrowserWindow | null = null;
@@ -29,6 +37,8 @@ let clickThroughEnabled = false;
 let cursorInsideWindow = true;
 let themeMode: ThemeMode = 'light';
 let contentProtectionEnabled = false;
+// 防捕获开启（且 Windows）时，托盘菜单切换为自绘受保护窗口。
+let protectedTrayMenuActive = false;
 let trayOnlyMode = false;
 let isAppQuitting = false;
 let ipcHandlersRegistered = false;
@@ -86,6 +96,7 @@ function applyContentProtection(enabled: boolean, persist = true): void {
     mainWindow.webContents.send('content-protection-changed', enabled);
   }
   if (persist) sessionStore?.update({ contentProtection: enabled });
+  syncTrayMenuMode();
   refreshApplicationMenu();
 }
 
@@ -913,9 +924,121 @@ function refreshApplicationMenuNow(): void {
   if (!mainWindow || mainWindow.isDestroyed() || !bookmarkStore || !passwordStore) return;
   const menu = buildAppMenu(mainWindow, bookmarkStore, passwordStore);
   Menu.setApplicationMenu(menu);
-  // Windows / Linux 下同步刷新托盘右键菜单
+  // Windows / Linux 下同步刷新托盘右键菜单；防捕获时保持原生菜单为空。
   if (tray && !tray.isDestroyed()) {
-    tray.setContextMenu(menu);
+    tray.setContextMenu(protectedTrayMenuActive ? null : menu);
+  }
+}
+
+// 防捕获开启时移除原生托盘菜单（它不受 setContentProtection 覆盖），
+// 改由 right-click 弹出应用自己的受保护 BrowserWindow。
+function syncTrayMenuMode(): void {
+  const next = contentProtectionEnabled && isProtectedTrayMenuSupported();
+  if (next === protectedTrayMenuActive) return;
+  protectedTrayMenuActive = next;
+  dismissProtectedTrayMenu();
+  if (tray && !tray.isDestroyed()) {
+    if (next) {
+      tray.setContextMenu(null);
+    } else if (mainWindow && !mainWindow.isDestroyed() && bookmarkStore && passwordStore) {
+      tray.setContextMenu(buildAppMenu(mainWindow, bookmarkStore, passwordStore));
+    }
+  }
+}
+
+// 精简一级菜单：只保留高频功能与「关闭防捕获」「退出」两个必需出口。
+// 标签标题可以正常显示——整个菜单窗口本身已被排除在捕获之外，无需再做数据脱敏。
+function buildProtectedTrayItems(): TrayMenuItem[] {
+  const items: TrayMenuItem[] = [
+    { id: 'toggle_window', label: '显示 / 隐藏窗口' },
+    { type: 'separator' },
+    {
+      id: 'toggle_ontop',
+      label: '置顶窗口',
+      kind: 'checkbox',
+      checked: mainWindow?.isAlwaysOnTop() ?? false
+    },
+    { id: 'theme_light', label: '浅色主题', kind: 'radio', checked: themeMode === 'light' },
+    { id: 'theme_dark', label: '深色主题', kind: 'radio', checked: themeMode === 'dark' },
+    { id: 'theme_system', label: '跟随系统', kind: 'radio', checked: themeMode === 'system' },
+    { type: 'separator' }
+  ];
+
+  let index = 0;
+  for (const tab of tabViews.values()) {
+    items.push({
+      id: `tab:${tab.id}`,
+      label: tabMenuLabel(tab, index),
+      kind: 'radio',
+      checked: tab.id === activeTabId
+    });
+    index += 1;
+  }
+  items.push(
+    { id: 'tab_new', label: '新建标签页' },
+    { id: 'tab_close', label: '关闭当前标签页', disabled: tabViews.size === 0 },
+    { type: 'separator' },
+    { id: 'open_data_dir', label: '打开数据目录' },
+    { id: 'clear_data', label: '清除缓存与 Cookies…' },
+    { type: 'separator' },
+    {
+      id: 'toggle_protection',
+      label: '防止被截图 / 录屏 / 共享屏幕捕获',
+      kind: 'checkbox',
+      checked: true
+    },
+    { type: 'separator' },
+    { id: 'quit', label: '退出', danger: true }
+  );
+  return items;
+}
+
+function handleProtectedTrayMenuAction(id: string): void {
+  dismissProtectedTrayMenu();
+  const win = mainWindow;
+  switch (id) {
+    case 'toggle_window':
+      if (win && !win.isDestroyed()) {
+        if (win.isVisible() && win.isFocused()) win.hide();
+        else {
+          if (win.isMinimized()) win.restore();
+          win.show();
+          win.focus();
+        }
+      }
+      return;
+    case 'toggle_ontop':
+      win?.webContents.send('menu-action', 'ontop_toggle');
+      return;
+    case 'theme_light':
+      applyTheme('light');
+      return;
+    case 'theme_dark':
+      applyTheme('dark');
+      return;
+    case 'theme_system':
+      applyTheme('system');
+      return;
+    case 'tab_new':
+      newTab(sessionStore?.getSnapshot().homeUrl ?? null);
+      return;
+    case 'tab_close':
+      if (activeTabId) closeTab(activeTabId);
+      return;
+    case 'open_data_dir':
+      void shell.openPath(dataLocation.root);
+      return;
+    case 'clear_data':
+      if (win && !win.isDestroyed()) void clearBrowsingData(win);
+      return;
+    case 'toggle_protection':
+      applyContentProtection(false);
+      return;
+    case 'quit':
+      void requestQuit();
+      return;
+    default:
+      if (id.startsWith('tab:')) switchTab(id.slice(4));
   }
 }
 
@@ -1384,9 +1507,7 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
     label: '标签',
     submenu: [
       ...tabList.map((tab, index) => ({
-        // 原生菜单窗口不受 setContentProtection 覆盖；防捕获开启时不把页面标题
-        // / URL 送进菜单，只保留序号，功能不减但消除数据泄露面。
-        label: contentProtectionEnabled ? `标签 ${index + 1}` : tabMenuLabel(tab, index),
+        label: tabMenuLabel(tab, index),
         type: 'radio' as const,
         checked: tab.id === activeTabId,
         click: () => switchTab(tab.id)
@@ -1419,21 +1540,11 @@ function buildAppMenu(win: BrowserWindow, bookmarks: BookmarkStore, passwords: P
         }
       ];
 
-  // 防捕获开启时，把含用户数据的四个菜单替换为占位项（菜单脱敏）。
-  // 这是数据层防护：原生菜单窗口由系统渲染，无法用 BrowserWindow.setContentProtection
-  // 排除在捕获之外，因此不把书签 / 历史 / 下载文件名 / 密码条目交给系统渲染。
-  const redacted = (label: string): MenuItemConstructorOptions => ({
-    label,
-    submenu: [{ label: '内容已隐藏（防捕获已开启）', enabled: false }]
-  });
-  const safeBookmarksMenu = contentProtectionEnabled ? redacted('收藏') : bookmarksMenu;
-  const safeHistoryMenu = contentProtectionEnabled ? redacted('历史') : historyMenu;
-  const safeDownloadsMenu = contentProtectionEnabled ? redacted('下载') : downloadsMenu;
-  const safePasswordsMenu = contentProtectionEnabled ? redacted('密码') : passwordsMenu;
-
+  // v1.1.4：撤销 v1.1.3 的菜单数据脱敏。用户要的是「窗口在捕获中不可见」，
+  // 不是隐藏数据；防捕获时用自绘受保护菜单窗口承载菜单，原生菜单只在未开启保护时出现。
   const template: MenuItemConstructorOptions[] = isMac
-    ? [appMenu, editMenu, browseMenu, tabsMenu, safeHistoryMenu, safeDownloadsMenu, safeBookmarksMenu, safePasswordsMenu, viewMenu, windowMenu]
-    : [editMenu, browseMenu, tabsMenu, safeHistoryMenu, safeDownloadsMenu, safeBookmarksMenu, safePasswordsMenu, viewMenu, trayWindowMenu, ...trayQuickActions];
+    ? [appMenu, editMenu, browseMenu, tabsMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, windowMenu]
+    : [editMenu, browseMenu, tabsMenu, historyMenu, downloadsMenu, bookmarksMenu, passwordsMenu, viewMenu, trayWindowMenu, ...trayQuickActions];
 
   return Menu.buildFromTemplate(template);
 }
@@ -1475,9 +1586,14 @@ function createTray(win: BrowserWindow): Tray {
   const trayIcon = icon.resize({ width: 16, height: 16 });
   const trayInstance = new Tray(trayIcon);
   trayInstance.setToolTip('FloatPane');
-  if (bookmarkStore && passwordStore) {
+  if (bookmarkStore && passwordStore && !protectedTrayMenuActive) {
     trayInstance.setContextMenu(buildAppMenu(win, bookmarkStore, passwordStore));
   }
+  // 防捕获开启时右键弹出应用自绘的受保护菜单窗口（Windows）。
+  trayInstance.on('right-click', () => {
+    if (!protectedTrayMenuActive || trayInstance.isDestroyed()) return;
+    showProtectedTrayMenu(trayInstance, buildProtectedTrayItems(), themeMode);
+  });
 
   // 单击托盘图标显示/隐藏窗口（Windows 惯例）
   trayInstance.on('click', () => {
@@ -1525,6 +1641,14 @@ function registerIpc(bookmarks: BookmarkStore, passwords: PasswordStore): void {
     return true;
   });
   ipcMain.handle('tabs:list', () => ({ tabs: listTabs(), activeTabId }));
+  ipcMain.handle('protected-tray-menu:select', (event, id: unknown) => {
+    if (!isProtectedTrayMenuSender(event.sender.id)) return;
+    if (typeof id === 'string') handleProtectedTrayMenuAction(id);
+  });
+  ipcMain.handle('protected-tray-menu:dismiss', (event) => {
+    if (!isProtectedTrayMenuSender(event.sender.id)) return;
+    dismissProtectedTrayMenu();
+  });
   ipcHandlersRegistered = true;
 
   // 设置窗口透明度 0.1 - 1.0
@@ -1763,6 +1887,9 @@ app.whenReady().then(async () => {
   registerUpdaterIpc(() => mainWindow);
   startAutoUpdateCheck(() => mainWindow);
 
+  // 启动恢复：若上次会话开启了防捕获，直接进入自绘受保护托盘菜单模式。
+  protectedTrayMenuActive = contentProtectionEnabled && isProtectedTrayMenuSupported();
+
   // Windows / Linux: 创建系统托盘图标,右键菜单承载全部应用功能
   if (process.platform !== 'darwin') {
     tray = createTray(mainWindow);
@@ -1794,6 +1921,7 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   stopAutoUpdateCheck();
+  destroyProtectedTrayMenu();
   tray?.destroy();
   tray = null;
 });
