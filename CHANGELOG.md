@@ -3,6 +3,29 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有版本基于 MPL-2.0 继续开源，
 源码仓库：<https://github.com/Hpjxiangbabang/opabrow>。
 
+## [1.1.6] - 2026-11-10
+
+修复 T-15 安装器多用户模式问题，采用调研结论中的方案 ①。**仅改一个 NSIS 配置，未改任何代码或 NSIS 脚本。**
+
+### 变更
+- `nsis.allowElevation: false`（官方一等配置，默认 `true`）：模板 `multiUserUi.nsh:110`
+  在非管理员时会禁用「为全部人安装」单选并标注 `(must run as admin)`，
+  因此 `InstallModeLeave` 的 `UAC_RunElevated + Quit` 分支不再被触发，安装器不再跨进程重启，
+  `$INSTDIR` 得以保留，点「上一步」也不会导致向导退出。
+- **保留双模式选择页**：以管理员运行时两个选项都可用且不需要提权；普通用户默认
+  「只为我安装」，其余流程不变。
+- 代价：普通用户若确实需要「为全部人安装」，须手动以管理员身份重新启动安装器。
+  管理员运行时切换模式仍会被 `setInstallModePer*` 重设 `$INSTDIR`（该场景的路径沿用未解决）。
+
+### 验证
+- typecheck 0 / 18 项单测 / build / Windows NSIS 打包通过。
+- 静态验证：`DEBUG=electron-builder` 输出确认 makensis defines 中不含
+  `MULTIUSER_INSTALLMODE_ALLOW_ELEVATION`（v1.1.3 历史日志中存在），
+  也不含 `INSTALL_MODE_PER_ALL_USERS`（双模式页保留）；应用与安装器 manifest 均 `asInvoker`。
+  详见 `TESTING.md` 的 T-15 方案 ① 实测记录。
+- **人工 GUI 安装实测通过**（2026-11-10）：用户按 `TESTING.md` 的四项验收清单实测，
+  反馈「符合预期」。方案 ① 由试验转为正式修复保留。
+
 ## [1.1.5] - 2026-11-10
 
 v1.1.4 用户实测反馈的小 bug 修复。诊断与验收见 [TESTING.md](TESTING.md)。
@@ -28,6 +51,7 @@ v1.1.4 用户实测反馈的小 bug 修复。诊断与验收见 [TESTING.md](TES
   **补充核查**：方案 C 受 electron-builder 模板硬约束，尝试性改动已完整回滚，
   详见 `TESTING.md` 的「T-15 补充：方案 C 的技术约束核查与回滚」。
   **最终决定：暂不修，保留已知问题**；安装配置与产物维持回滚后的干净 v1.1.5 状态。
+  （该决定后续已变更：v1.1.6 采用方案 ① `nsis.allowElevation: false` 修复并经实测通过，见 [1.1.6]。）
 
 ### 项目决定
 - **反检测功能暂停开发**：用户明确表示之前不知道它是风险项，只是想摸鱼。
@@ -211,29 +235,3 @@ v1.1.4 用户实测反馈的小 bug 修复。诊断与验收见 [TESTING.md](TES
 [1.1.1]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.0
 [1.0.0]: https://github.com/ClaytonPetrosian/opabrow
-
-## [1.1.6] - 2026-11-10
-
-试验性修复 T-15，采用调研结论中的方案 ①。**仅改一个 NSIS 配置，未改任何代码或 NSIS 脚本。**
-
-### 变更
-- `nsis.allowElevation: false`（官方一等配置，默认 `true`）：模板 `multiUserUi.nsh:110`
-  在非管理员时会禁用「为全部人安装」单选并标注 `(must run as admin)`，
-  因此 `InstallModeLeave` 的 `UAC_RunElevated + Quit` 分支不再被触发，安装器不再跨进程重启，
-  `$INSTDIR` 得以保留，点「上一步」也不会导致向导退出。
-- **保留双模式选择页**：以管理员运行时两个选项都可用且不需要提权；普通用户默认
-  「只为我安装」，其余流程不变。
-- 代价：普通用户若确实需要「为全部人安装」，须手动以管理员身份重新启动安装器。
-  管理员运行时切换模式仍会被 `setInstallModePer*` 重设 `$INSTDIR`（该场景的路径沿用未解决）。
-
-### 验证
-- typecheck 0 / 18 项单测 / build / Windows NSIS 打包通过。
-- 静态验证：`DEBUG=electron-builder` 输出确认 makensis defines 中不含
-  `MULTIUSER_INSTALLMODE_ALLOW_ELEVATION`（v1.1.3 历史日志中存在），
-  也不含 `INSTALL_MODE_PER_ALL_USERS`（双模式页保留）；应用与安装器 manifest 均 `asInvoker`。
-  详见 `TESTING.md` 的 T-15 试验记录。
-- **安装向导交互尚未做 GUI 实测**，需按验收步骤人工确认后决定是否保留。
-
-### 回滚
-- 删除 `electron-builder.yml` 中 `nsis.allowElevation: false` 一行即可恢复 v1.1.5 行为。
-

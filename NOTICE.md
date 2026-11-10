@@ -36,3 +36,8 @@ Original source remains available under MPL-2.0 at the upstream repository.
   the tray context menu is rendered inside an application-owned BrowserWindow that is itself
   excluded from capture (`src/main/protectedTrayMenu.ts`). Main window capture protection
   verified by the user and left unchanged.
+- v1.1.5: fixed the protected tray menu's clipped last item and grey border
+  (`src/main/protectedTrayMenu.ts`); reverted the attempted custom NSIS install-mode hooks
+  after confirming electron-builder template constraints.
+- v1.1.6: fixed the Windows installer's multi-user mode page by setting
+  `nsis.allowElevation: false` (no source or NSIS script changes); verified by user GUI testing.

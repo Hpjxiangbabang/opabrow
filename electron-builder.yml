@@ -54,12 +54,7 @@ linux:
 nsis:
   oneClick: false
   perMachine: false
-  # T-15 试验（v1.1.6）：官方一等配置。设为 false 后模板 multiUserUi.nsh 会在
-  # 非管理员时禁用「为全部人安装」单选并标注 (must run as admin)，
-  # 因此 InstallModeLeave 的 UAC_RunElevated + Quit 分支不会被触发，
-  # 安装器不再跨进程重启，$INSTDIR 得以保留，「上一步」也不会导致向导退出。
-  # 保留双模式页（以管理员运行时两个选项都可用），且无需自定义 NSIS 脚本。
-  # 代价：普通用户若需全用户安装，须手动以管理员身份重新启动安装器。
+  # T-15：禁用非管理员提权重启，避免 $INSTDIR 丢失与「上一步」退出向导（v1.1.6 已实测通过）。
   allowElevation: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
