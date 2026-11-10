@@ -37,7 +37,7 @@
 
 ## 下载
 
-从 [Releases](https://github.com/Hpjxiangbabang/opabrow/releases) 获取 Windows x64、macOS（arm64 / x64）或 Linux x64 安装包。Windows 安装向导可自选目录，另有免安装便携 ZIP。二进制未签名，首次启动可能被系统拦截并要求确认。
+从 [Releases](https://github.com/Hpjxiangbabang/opabrow/releases) 获取 Windows x64 安装包或 Linux x64 AppImage。macOS 支持从源码构建，但不提供预编译 DMG。Windows 安装向导可自选目录，另有免安装便携 ZIP。二进制未签名，首次启动可能被系统拦截并要求确认。
 
 ## 快捷键
 

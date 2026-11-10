@@ -37,7 +37,7 @@
 
 ## ダウンロード
 
-[Releases](https://github.com/Hpjxiangbabang/opabrow/releases) から Windows x64、macOS（arm64 / x64）、Linux x64 向けインストーラーを取得できます。Windows 版はインストール先を選択でき、ポータブル ZIP もあります。バイナリは未署名のため、初回起動時に OS の確認が必要な場合があります。
+[Releases](https://github.com/Hpjxiangbabang/opabrow/releases) から Windows x64 インストーラーと Linux x64 AppImage を取得できます。macOS はソースからビルド可能ですが、DMG は配布していません。Windows 版はインストール先を選択でき、ポータブル ZIP もあります。バイナリは未署名のため、初回起動時に OS の確認が必要な場合があります。
 
 ## ショートカット
 

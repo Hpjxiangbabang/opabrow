@@ -37,7 +37,7 @@ Most browsers take over the whole screen. FloatPane keeps just one page at the e
 
 ## Download
 
-Get the installer for Windows x64, macOS (arm64 / x64) or Linux x64 from [Releases](https://github.com/Hpjxiangbabang/opabrow/releases). The Windows installer lets you choose the install folder, and portable ZIP builds are available too. Binaries are unsigned, so your OS may ask for confirmation on first launch.
+Get the Windows x64 installer and Linux x64 AppImage from [Releases](https://github.com/Hpjxiangbabang/opabrow/releases). macOS is supported from source, but no prebuilt DMG is published. The Windows installer lets you choose the install folder, and portable ZIP builds are available too. Binaries are unsigned, so your OS may ask for confirmation on first launch.
 
 ## Shortcuts
 
