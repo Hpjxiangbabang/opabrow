@@ -14,7 +14,7 @@
   <a href="https://github.com/Hpjxiangbabang/opabrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0 ライセンス" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-111827?style=flat-square" alt="クロスプラットフォーム" />
   <img src="https://img.shields.io/badge/runtime-Electron-47848F?style=flat-square&logo=electron" alt="Electron" />
-  <img src="https://img.shields.io/badge/version-1.1.4-2EA44F?style=flat-square" alt="v1.1.4" />
+  <img src="https://img.shields.io/badge/version-1.1.5-2EA44F?style=flat-square" alt="v1.1.5" />
 </p>
 
 <p align="center">

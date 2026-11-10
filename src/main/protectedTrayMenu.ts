@@ -27,8 +27,10 @@ export type TrayTheme = 'light' | 'dark' | 'system';
 
 const MENU_WIDTH = 268;
 const ROW_HEIGHT = 30;
-const SEPARATOR_HEIGHT = 9;
-const PADDING = 12;
+// 分隔线实际占位 = height 9 + margin-bottom 4.5 + border-bottom 1，按 15 计。
+const SEPARATOR_HEIGHT = 15;
+// .menu 的额外占位 = margin 4*2 + padding 6*2 + border 1*2 = 22，再留 8px 余量。
+const PADDING = 30;
 
 let menuWindow: BrowserWindow | null = null;
 
@@ -104,8 +106,11 @@ function buildHtml(items: TrayMenuItem[], theme: TrayTheme): string {
     .menu {
       width: calc(100% - 8px); margin: 4px; padding: 6px;
       background: ${p.bg}; border: 1px solid ${p.border}; border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.32); overflow: hidden;
+      /* 不使用 box-shadow：透明窗口上的模糊阴影会形成一圈灰边。 */
+      max-height: calc(100vh - 8px); overflow-y: auto;
+      scrollbar-width: none;
     }
+    .menu::-webkit-scrollbar { display: none; }
     .item {
       display: flex; align-items: center; width: 100%; height: ${ROW_HEIGHT}px;
       padding: 0 10px; border: 0; border-radius: 6px; background: transparent;
@@ -166,14 +171,16 @@ export function showProtectedTrayMenu(
 ): void {
   dismissProtectedTrayMenu();
 
-  const rows = items.reduce((sum, item) => sum + ('type' in item ? SEPARATOR_HEIGHT : ROW_HEIGHT), 0);
-  const height = Math.min(rows + PADDING, 620);
   const bounds = tray.getBounds();
   const anchor = {
     x: bounds.x + bounds.width / 2,
     y: bounds.y + bounds.height / 2
   };
   const workArea = screen.getDisplayNearestPoint(anchor).workArea;
+  const rows = items.reduce((sum, item) => sum + ('type' in item ? SEPARATOR_HEIGHT : ROW_HEIGHT), 0);
+  // 上限取所在显示器工作区高度，避免菜单超出屏幕；.menu 内部已允许滚动兜底。
+  const maxHeight = Math.max(160, workArea.height - 16);
+  const height = Math.min(rows + PADDING, maxHeight);
 
   // 托盘通常位于屏幕底部，菜单优先向上展开；空间不足时改向下。
   let y = bounds.y - height;
@@ -191,6 +198,11 @@ export function showProtectedTrayMenu(
     height,
     frame: false,
     transparent: true,
+    // Windows 默认会给无边框窗口加 DWM 阴影与 thick frame 边框，
+    // 在透明背景上呈现为一圈灰边；显式关闭并指定全透明底色。
+    backgroundColor: '#00000000',
+    hasShadow: false,
+    thickFrame: false,
     skipTaskbar: true,
     resizable: false,
     movable: false,
@@ -227,8 +239,31 @@ export function showProtectedTrayMenu(
   void win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   win.webContents.once('did-finish-load', () => {
     if (win.isDestroyed()) return;
-    win.show();
-    win.focus();
+    // 运行时精确校正：按 .menu 的实际渲染高度重设窗口，
+    // 避免任何 CSS 计算偏差把最后一项裁掉（v1.1.4 实测问题）。
+    void (async () => {
+      try {
+        const measured = (await win.webContents.executeJavaScript(
+          "Math.ceil(document.querySelector('.menu').getBoundingClientRect().height) + 8"
+        )) as number;
+        if (!win.isDestroyed() && Number.isFinite(measured) && measured > 0) {
+          const finalHeight = Math.min(Math.max(measured, 80), maxHeight);
+          let finalY = bounds.y - finalHeight;
+          if (finalY < workArea.y) finalY = bounds.y + bounds.height;
+          finalY = Math.max(
+            workArea.y,
+            Math.min(finalY, workArea.y + workArea.height - finalHeight)
+          );
+          win.setBounds({ x, y: finalY, width: MENU_WIDTH, height: finalHeight });
+        }
+      } catch {
+        // 测量失败时保留估算高度；.menu 的滚动兜底仍可访问全部条目。
+      }
+      if (!win.isDestroyed()) {
+        win.show();
+        win.focus();
+      }
+    })();
   });
 }
 

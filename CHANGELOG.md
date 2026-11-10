@@ -3,6 +3,36 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有版本基于 MPL-2.0 继续开源，
 源码仓库：<https://github.com/Hpjxiangbabang/opabrow>。
 
+## [1.1.5] - 2026-11-10
+
+v1.1.4 用户实测反馈的小 bug 修复。诊断与验收见 [TESTING.md](TESTING.md)。
+
+### 修复
+- **T-16 自绘菜单最后一项看不到**：根因是窗口高度低估约 50px ——
+  分隔线按 9px 计算（实际含 `margin-bottom` 与 `border-bottom` 约 15px），
+  `.menu` 的 margin / padding / border 共 22px 只按 12px 计入。
+  修正为 `SEPARATOR_HEIGHT=15`、`PADDING=30`；并在 `did-finish-load` 后测量
+  `.menu` 的实际渲染高度重设窗口与位置，彻底消除计算偏差；
+  高度上限改为所在显示器工作区高度，`.menu` 内部允许滚动兜底。
+- **T-17 菜单窗口周围一圈灰边**：去掉 `.menu` 的 `box-shadow`（透明窗口上的模糊阴影
+  会形成灰边），并为 `BrowserWindow` 增加 `hasShadow: false`、`thickFrame: false`、
+  `backgroundColor: '#00000000'`，关闭 Windows DWM 默认阴影与无边框窗口的 thick frame。
+
+### 已知问题（待用户确认方案，本版本未改安装配置）
+- **T-15 多用户安装模式**：选择「为全部人安装」后，目录页不沿用「只为我安装」时选的路径；
+  点「上一步」安装程序直接退出。根因是 electron-builder NSIS 模板在
+  `InstallModeLeave` 里对非管理员进程执行 `UAC_RunElevated` + `Quit`，
+  外层退出、内层提权重启，跨进程后 NSIS 变量（含 `$INSTDIR`）全部丢失；
+  回到模式页时 PRE 再次进入提权分支。三个修复方案及取舍见 `TESTING.md` 的 T-15，
+  待用户确认是否保留「为全部人安装」后再实施。
+
+### 项目决定
+- **反检测功能暂停开发**：用户明确表示之前不知道它是风险项，只是想摸鱼。
+  相关调研与边界说明保留在文档中，但不再推进实现，也不再就该方向安排工作。
+
+### 验证
+- typecheck 0 / 18 项单测 / build / Windows 打包；菜单 GUI 表现需人工复测。
+
 ## [1.1.4] - 2026-11-10
 
 依据 v1.1.3 用户实测反馈修正 T-12 的实现方向。完整决策与验收见 [TESTING.md](TESTING.md)。
@@ -170,6 +200,7 @@
 
 上游 `ClaytonPetrosian/opabrow` 的零改动快照（提交 `4bab39e`）。功能与变更见上游仓库。
 
+[1.1.5]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.5
 [1.1.4]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.4
 [1.1.3]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.3
 [1.1.2]: https://github.com/Hpjxiangbabang/opabrow/releases/tag/v1.1.2

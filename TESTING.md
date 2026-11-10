@@ -389,3 +389,65 @@ C 先消除实质性风险（菜单被截屏时不再泄露任何用户数据）
 「突破会议软件置顶识别」按用户选择先收集场景细节，未实现。需用户提供：具体会议软件与版本、
 识别提示原文、出现时机（共享屏幕 / 加入会议 / 全程）、以及期望的使用场景。
 在拿到这些信息前不开发规避第三方检测的能力。
+
+---
+
+## v1.1.4 实测反馈（2026-11-10）与 v1.1.5 处理
+
+| 编号 | 现象 | 处理 |
+| --- | --- | --- |
+| T-15 | 安装时选「为全部人安装」，进入下一步后没有识别到之前「只为我安装」的路径；再点「上一步」安装程序直接退出 | 已定位根因，三个方案待用户确认，本版本未改安装配置 |
+| T-16 | 自绘受保护菜单看不到最下面一个选项（排除任务栏遮挡） | 已修复：高度计算 + 运行时实测校正 |
+| T-17 | 自绘受保护菜单窗口周围有一圈灰边影响美观 | 已修复：去掉阴影与 thick frame |
+
+### T-15 安装器多用户模式：根因与方案（待确认）
+
+**根因**（electron-builder 26.15.3 NSIS 模板 `multiUserUi.nsh` / `multiUser.nsh`）：
+
+1. 安装模式页的 `InstallModeLeave` 在用户选择「为全部人安装」且当前进程非管理员时，
+   执行 `ShowWindow $HWNDPARENT SW_HIDE` → `!insertmacro UAC_RunElevated` →
+   外层进程 `Quit`，由提权后的内层进程重新拉起安装器。
+2. 内层进程的 `InstallModePre` 命中 `UAC_IsInnerInstance && UAC_IsAdmin` 分支，
+   直接 `setInstallModePerAllUsers; Abort` 跳过模式页。
+   该宏从 HKLM 读 `InstallLocation`，读不到就用 `$PROGRAMFILES` 默认值重设 `$INSTDIR`。
+   **跨进程后 NSIS 变量全部丢失**，因此「只为我安装」时用户选的自定义路径不会带过来。
+3. 点「上一步」回到模式页时 PRE 再次进入提权分支 / 内外双实例检测
+   （`ALLOW_ONLY_ONE_INSTALLER_INSTANCE`），表现为安装程序直接退出。
+
+这不是本项目 `installer.nsh` 引入的，属于 `perMachine: false` +
+`allowToChangeInstallationDirectory: true` + 多用户选择页组合下的模板既有缺陷。
+
+| 方案 | 做法 | 优点 | 代价 |
+| --- | --- | --- | --- |
+| A. 固定「只为我安装」 | 定义 `!macro customInstallMode` 置 `$isForceCurrentInstall=1`，PRE 直接 `setInstallModePerUser; Abort` 跳过模式页 | 彻底避开 UAC 重启与路径丢失；最稳、无需 GUI 深度验证 | 不再提供「为全部人安装」 |
+| B. 固定「为所有用户安装」 | `nsis.perMachine: true`，模板定义 `INSTALL_MODE_PER_ALL_USERS` 后不再插入模式页；安装器启动时即需管理员权限 | 保留全用户安装能力、路径稳定 | 每次安装都要 UAC；默认落在 Program Files |
+| C. 保留两种模式并修复路径传递 | 切换模式时把 `$INSTDIR` 经命令行参数传给提权内层，内层读取恢复；同时处理「上一步」不重复提权 | 功能完整 | 需改 NSIS 模板级逻辑，跨进程状态传递，风险最高且只能靠人工安装实测验证 |
+
+**待用户确认**：是否必须保留「为全部人安装」。若不需要，采用方案 A。
+
+### T-16 菜单末项裁剪：修复
+
+- 常量修正：分隔线 `SEPARATOR_HEIGHT` 9 → 15（含 `margin-bottom: 4.5px` 与
+  `border-bottom: 1px`）；`PADDING` 12 → 30（`.menu` 的 margin 8 + padding 12 +
+  border 2 = 22，再留 8px 余量）。原实现合计低估约 50px，正好裁掉最后一个 30px 选项。
+- `did-finish-load` 后用 `executeJavaScript` 读取 `.menu` 的
+  `getBoundingClientRect().height`，按实测值重设窗口高度并重新计算贴托盘的 y 坐标。
+- 高度上限由固定 620 改为所在显示器 `workArea.height - 16`；`.menu` 增加
+  `max-height: calc(100vh - 8px)` 与 `overflow-y: auto`（隐藏滚动条）作为极端兜底。
+
+### T-17 灰边：修复
+
+- 删除 `.menu` 的 `box-shadow`（透明无边框窗口上的模糊阴影正是那圈灰）。
+- `BrowserWindow` 增加 `hasShadow: false`、`thickFrame: false`、
+  `backgroundColor: '#00000000'`，关闭 Windows DWM 默认阴影与 thick frame 边框。
+
+### 反检测功能：暂停
+
+用户明确表示「之前不知道它是风险项，只是想摸鱼」，该功能**暂停开发**。
+T-14 末尾记录的场景细节清单不再索要，相关调研与边界说明保留备查，不安排实现。
+
+### 验收方式（人工）
+
+1. 开启防捕获后右键托盘：菜单最后一项「退出」完整可见，点击可用；标签很多时菜单不超出屏幕。
+2. 菜单周围无灰边 / 阴影，深浅主题下背景与文字清晰。
+3. 安装器方案确认后，按所选方案重新验证：模式切换、目录页路径、「上一步」不退出。
