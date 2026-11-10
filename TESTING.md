@@ -527,3 +527,48 @@ NSIS 模板存在硬约束，**该方案无法通过常规配置达成**：
 - electron-builder NSIS 文档：<https://www.electron.build/docs/nsis/>（v26 版含 FAQ 的 `preInit` 示例）
 - NSIS MultiUser / UAC plug-in 文档：<https://nsis.sourceforge.io/Docs/MultiUser/Readme.html>
 - 上游 PR/Issue：`#10377`、`#10340`、`#9765`、`#10085`、`#8536`、`#1961`
+
+
+---
+
+## T-15 试验：实施方案 ① `allowElevation: false`（v1.1.6，2026-11-10）
+
+依据上一节调研，采用官方一等配置做最小试验。`electron-builder.yml` 的 `nsis` 段新增
+`allowElevation: false`，其余（含 `build/installer.nsh`）不变。
+
+### 静态验证方法与结果
+
+`app-builder-lib` 的 `NsisTarget.js:435` 只在 `options.allowElevation !== false` 时定义
+`MULTIUSER_INSTALLMODE_ALLOW_ELEVATION`。该 define 缺失时，模板
+`multiUserUi.nsh:110` 走 `!else` 分支，把 `(must run as admin)` 写入控件并
+`EnableWindow ... 0` 禁用单选按钮。
+
+**正确判据**：用 `DEBUG=electron-builder` 打包，检查实际传给 makensis 的 `-D` defines。
+NSIS 脚本字符串在安装包内是 LZMA 压缩的，直接搜二进制明文（UTF-16LE / ASCII）不可行
+—— 实测 v1.1.5 与 v1.1.6 都搜不到该字符串，不能作为判据。
+
+实测结果（v1.1.6，2026-11-10）：
+
+- 调试输出显示配置 `allowElevation: false` 已被 electron-builder 读取；
+- makensis 的 defines 列表中**不含** `MULTIUSER_INSTALLMODE_ALLOW_ELEVATION`
+  （v1.1.3 历史打包日志中该 define 存在）→ 确认模板 `!else` 分支生效；
+- **不含** `INSTALL_MODE_PER_ALL_USERS` → 双模式选择页保留；
+- 仍含 `allowToChangeInstallationDirectory` 与 `INSTALL_MODE_PER_ALL_USERS_REQUIRED`
+  （后者用于更新检测，不影响模式页）；`VERSION=1.1.6`；
+- 安装器与应用 exe 的 manifest 均为 `asInvoker`，应用启动不会额外弹 UAC。
+
+默认 `selectPerMachineByDefault: false`，「只为我安装」默认选中，禁用按钮后
+`BM_GETCHECK` 不会返回 `BST_CHECKED`，
+`InstallModeLeave` 的 `UAC_RunElevated + Quit` 分支不会执行。
+
+### 验收方式（人工，需真实安装向导）
+
+1. 以**普通用户**运行安装器：安装模式页应显示「只为我安装」（默认选中）与
+   「为全部人安装」（禁用，标注 must run as admin）。
+2. 在目录页选一个自定义路径 → 点「上一步」回到模式页 → 再点「下一步」回到目录页：
+   路径应保持为刚才选的值，安装程序不应退出。
+3. 以**管理员**运行安装器：两个选项均可选；切换到「为全部人安装」后目录页路径变化属已知限制
+   （`setInstallModePer*` 仍会重设 `$INSTDIR`），记录现象即可。
+4. 确认安装、卸载与升级行为无回归；确认应用启动不弹 UAC（manifest 仍为 `asInvoker`）。
+
+若实测不符合预期，删除 `electron-builder.yml` 中该配置行即可回到 v1.1.5 行为。

@@ -14,7 +14,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3B82F6?style=flat-square" alt="MPL-2.0" /></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-111827?style=flat-square" alt="Platforms" />
   <img src="https://img.shields.io/badge/runtime-Electron%2043-47848F?style=flat-square&logo=electron" alt="Electron 43" />
-  <img src="https://img.shields.io/badge/version-1.1.5-2EA44F?style=flat-square" alt="v1.1.5" />
+  <img src="https://img.shields.io/badge/version-1.1.6-2EA44F?style=flat-square" alt="v1.1.6" />
 </p>
 
 <p align="center">
